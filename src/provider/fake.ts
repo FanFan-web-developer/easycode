@@ -780,6 +780,67 @@ export class FakeProvider implements Provider {
       yield { type: "done" }
       return
     }
+    if (prompt.includes("symbol-aware edit execution eval")) {
+      const results = toolResults(input.messages)
+      const definitions = results.filter((result) => result.toolName === "find_definition")
+      const references = results.filter((result) => result.toolName === "find_references")
+      const edits = results.filter((result) => result.toolName === "edit")
+      if (definitions.length === 0) {
+        yield { type: "tool_call", call: call("find_definition", { symbol: "src/billing.InvoiceService.format", language: "typescript" }) }
+        yield { type: "done" }
+        return
+      }
+      if (references.length === 0) {
+        yield { type: "tool_call", call: call("find_references", { symbol: "src/billing.InvoiceService.format", language: "typescript" }) }
+        yield { type: "done" }
+        return
+      }
+      if (edits.length === 0) {
+        yield { type: "tool_call", call: call("edit", { filePath: "src/billing.ts", oldString: "format(total: number): string", newString: "formatInvoice(total: number): string" }) }
+        yield { type: "done" }
+        return
+      }
+      if (edits.length === 1) {
+        yield { type: "tool_call", call: call("edit", { filePath: "src/checkout.ts", oldString: "service.format(total)", newString: "service.formatInvoice(total)" }) }
+        yield { type: "done" }
+        return
+      }
+      if (definitions.length === 1) {
+        yield { type: "tool_call", call: call("find_definition", { symbol: "src/billing.InvoiceService.formatInvoice", language: "typescript" }) }
+        yield { type: "done" }
+        return
+      }
+      if (references.length === 1) {
+        yield { type: "tool_call", call: call("find_references", { symbol: "src/billing.InvoiceService.format", language: "typescript" }) }
+        yield { type: "done" }
+        return
+      }
+      if (references.length === 2) {
+        yield { type: "tool_call", call: call("find_references", { symbol: "src/billing.InvoiceService.formatInvoice", language: "typescript" }) }
+        yield { type: "done" }
+        return
+      }
+      const initialDefinition = definitions[0]?.output ?? ""
+      const initialReferences = references[0]?.output ?? ""
+      const newDefinition = definitions[1]?.output ?? ""
+      const oldReferencesAfterRename = references[1]?.output ?? ""
+      const newReferences = references[2]?.output ?? ""
+      const passed = initialDefinition.includes("src/billing.ts:2")
+        && initialReferences.includes("src/checkout.ts:4")
+        && newDefinition.includes("src/billing.ts:2")
+        && newDefinition.includes("formatInvoice")
+        && oldReferencesAfterRename.includes("No matches")
+        && newReferences.includes("src/checkout.ts:4")
+        && !newReferences.includes("src/reporting.ts")
+      yield {
+        type: "text_delta",
+        text: passed
+          ? "Symbol-aware edit execution passed: InvoiceService.format renamed to formatInvoice at src/billing.ts:2; src/checkout.ts:4 updated; ReportService.format untouched; post-edit semantic verification passed."
+          : "Symbol-aware edit execution failed semantic verification.",
+      }
+      yield { type: "done" }
+      return
+    }
     if (prompt.includes("run code safely")) {
       const providerText = input.providerMessages.map((message) => message.content).join("\n")
       const recalled = providerText.includes("<project_memory_recall>") && providerText.includes("safeSandbox")

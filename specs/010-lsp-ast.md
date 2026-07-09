@@ -42,9 +42,10 @@ LSP/AST support improves EasyCode beyond text search by giving the agent code-st
 - Call-edge resolution now uses high-confidence receiver type hints from TypeScript parameters, local declarations, `new T()` initializers, and `this.method()` so `call_graph` and `find_references` can target the owning class or interface method before falling back to raw name matching.
 - `EC-015` adds a deterministic fake eval fixture for same-name method collisions, requiring qualified `find_definition` and `find_references` lookups to resolve `InvoiceService.format` while excluding `ReportService.format`.
 - `EC-016` exercises the symbol-aware edit proposal boundary in plan mode: it requires definition/reference lookup before `plan_exit`, keeps the fixture read-only, and verifies the final proposed plan names target symbols, owning definitions, affected references, excluded same-name matches, edit boundaries, and rollback checks.
+- `EC-017` exercises a deterministic symbol-aware rename execution path: the run resolves `InvoiceService.format`, edits only the owning definition plus verified reference, leaves `ReportService.format` untouched, and performs post-edit semantic checks for old/new symbol references.
 
 ## Remaining Roadmap
 
 - Keep symbol lookup read-only until edit-boundary behavior is proven with focused tests.
-- Expand eval coverage from deterministic fake same-name collision and edit-boundary planning to real-provider behavior before promoting symbol-aware edits.
-- Promote symbol-aware edit execution only after affected references, excluded same-name matches, rollback boundaries, and post-edit verification are covered by implementation tests.
+- Expand eval coverage from deterministic fake same-name collision, edit-boundary planning, and bounded rename execution to real-provider behavior before promoting generic symbol-aware edits.
+- Promote generic symbol-aware edit execution only after rollback behavior and post-edit verification are covered outside the deterministic fake-provider path.
