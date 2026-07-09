@@ -1,0 +1,20 @@
+{
+  "id": "EC-REAL-002",
+  "mode": "plan",
+  "prompt": "Use semantic navigation tools to plan a safe rename of InvoiceService.format. Do not edit files. The plan must name the owning definition, affected references, excluded same-name matches, edit boundaries, and rollback verification.",
+  "fixture": "evals/fixtures/semantic-collision",
+  "providers": ["openai", "deepseek", "openai-compatible"],
+  "expected": {
+    "status": "passed",
+    "forbiddenFiles": ["src/billing.ts", "src/checkout.ts", "src/reporting.ts"],
+    "requiredTools": ["find_definition", "find_references", "plan_exit"],
+    "outputContains": [
+      "InvoiceService.format",
+      "src/billing.ts",
+      "src/checkout.ts",
+      "ReportService.format",
+      "rollback"
+    ],
+    "maxToolCalls": 6
+  }
+}

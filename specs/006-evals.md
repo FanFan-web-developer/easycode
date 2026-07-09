@@ -31,6 +31,7 @@
 - `EC-010`: Continuation-style prompts auto-recall relevant project memory.
 - `EC-011`: Durable workflow lessons can be promoted into project memory.
 - `EC-REAL-001`: Real provider smoke eval with no tools and output matching.
+- `EC-REAL-002`: Real provider semantic-planning smoke eval that requires `find_definition`, `find_references`, and `plan_exit` for a same-name symbol rename plan without editing files.
 
 Tasks without `providers` are fake-provider deterministic evals. Real provider evals must opt in with `providers` and should avoid deterministic fake-only tool-sequence assertions unless explicitly intended.
 
@@ -52,10 +53,10 @@ Tasks without `providers` are fake-provider deterministic evals. Real provider e
 - The provider-gate implementation remains the internal engine behind the real-provider portion of `bun run gate`.
 - `--provider <name>` narrows the provider pass to one provider; `--providers a,b` checks an explicit list.
 - Missing required credentials are recorded as `skipped` with the missing variable names, not as pass/fail.
-- Configured providers run a no-tool real smoke eval, a small deterministic APIx hard-gate subset, and the real cache benchmark unless disabled with `--no-apix` or `--no-cache`.
+- Configured providers run the real smoke eval set, a small deterministic APIx hard-gate subset, and the real cache benchmark unless disabled with `--no-apix` or `--no-cache`. The default smoke set includes both a no-tool response check and a symbol-aware semantic-planning check.
 - Each unified gate run writes machine-readable JSON and Markdown to `.easycode/reports/quality-gate` so local and provider readiness can be compared over time.
 - The process exits non-zero only when a configured provider check fails; an all-skipped run is allowed for local development without credentials.
-- The shared real-provider smoke eval task `EC-REAL-001` must stay aligned with the same provider set so the default gate does not silently skip supported providers.
+- The shared real-provider smoke eval tasks `EC-REAL-001` and `EC-REAL-002` must stay aligned with the same provider set so the default gate does not silently skip supported providers.
 
 ## APIx Golden Dataset
 - `specs/007-apix-golden-dataset.md` defines the 100-case APIx dataset for layered context architecture.

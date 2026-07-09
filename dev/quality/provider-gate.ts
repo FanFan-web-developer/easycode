@@ -44,7 +44,7 @@ export type ProviderGateOptions = {
 }
 
 const defaultProviders = listProviders().filter((provider) => provider !== "fake" && provider !== "simulated")
-const defaultSmokeTaskIDs = ["EC-REAL-001"]
+export const defaultSmokeTaskIDs = ["EC-REAL-001", "EC-REAL-002"]
 const defaultAPIxIDs = ["APIX-004", "APIX-011", "APIX-012"]
 
 function applyTlsCliOverrides(argv: string[]) {

@@ -8,6 +8,21 @@ Status: Draft
 - Active documentation priority: keep roadmap specs aligned with implemented modules instead of leaving implemented slices marked as drafts.
 - Current product priority after stabilization: desktop V1 readiness and release hygiene on top of the local sidecar boundary.
 
+## Step 68: Real Provider Semantic Planning Smoke
+
+- Scope: move LSP/AST real-provider promotion beyond the no-tool smoke check without enabling generic symbol-aware edit execution.
+- Implementation:
+  - Added `EC-REAL-002`, a read-only plan-mode real-provider eval that requires `find_definition`, `find_references`, and `plan_exit` on the same-name `InvoiceService.format` fixture.
+  - Updated the provider gate default smoke task list to include both `EC-REAL-001` and `EC-REAL-002`.
+  - Added unit coverage for the default real-provider smoke task list.
+  - Updated `specs/006-evals.md` and `specs/010-lsp-ast.md` so the real-provider smoke contract and LSP/AST roadmap match the implemented gate surface.
+- Verification:
+  - `bun test test/unit/provider-gate.test.ts test/integration/quality-gate.test.ts --timeout 30000`: 9 pass, 0 fail.
+  - `bun run dev/quality/eval.ts --provider fake`: 18/18 fake eval tasks passed; `EC-REAL-001` and `EC-REAL-002` skipped for fake as expected.
+  - `bun run typecheck`: pass.
+  - `bun run gate` passed local checks (`typecheck`, `tests`, `eval_fake`, `apix_subset`, `cache_benchmark`, and `build`); the final report failed only at `provider_gate` because the configured DeepSeek provider was unreachable. The provider-gate smoke details include both `EC-REAL-001` and `EC-REAL-002`.
+- Notes: this still keeps generic symbol-aware edits gated; the next roadmap step is real-provider bounded execution behavior once provider connectivity is healthy.
+
 ## Step 67: Gate TLS Env Cleanup And Spec Roadmap Hygiene
 
 - Scope: close the quality-gate divergence where the test sub-check inherited Node TLS configuration from global EasyCode env, then align roadmap specs with the implemented LSP/AST and desktop-sidecar state.

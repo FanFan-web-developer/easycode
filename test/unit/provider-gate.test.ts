@@ -2,7 +2,7 @@ import { describe, expect, test } from "bun:test"
 import os from "node:os"
 import path from "node:path"
 import { mkdtemp, rm } from "node:fs/promises"
-import { formatProviderGateReport, parseArgs, runProviderGate } from "../../dev/quality/provider-gate"
+import { defaultSmokeTaskIDs, formatProviderGateReport, parseArgs, runProviderGate } from "../../dev/quality/provider-gate"
 
 describe("provider gate", () => {
   test("parses insecure TLS override flags", () => {
@@ -18,6 +18,10 @@ describe("provider gate", () => {
       if (originalValue === undefined) delete process.env.NODE_TLS_REJECT_UNAUTHORIZED
       else process.env.NODE_TLS_REJECT_UNAUTHORIZED = originalValue
     }
+  })
+
+  test("defaults real-provider smoke coverage to no-tool and semantic planning tasks", () => {
+    expect(defaultSmokeTaskIDs).toEqual(["EC-REAL-001", "EC-REAL-002"])
   })
 
   test("defaults to all public real providers", async () => {
