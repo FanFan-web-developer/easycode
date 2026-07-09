@@ -1,6 +1,6 @@
 import { describe, expect, test } from "bun:test"
 import path from "node:path"
-import { formatQualityGateReport, parseArgs, plannedChecks, runQualityGate } from "../../dev/quality/quality-gate"
+import { formatQualityGateReport, parseArgs, plannedChecks, runQualityGate, testCommandEnv } from "../../dev/quality/quality-gate"
 
 describe("quality gate", () => {
   test("plans the unified gate checks", () => {
@@ -27,6 +27,44 @@ describe("quality gate", () => {
     } finally {
       if (originalValue === undefined) delete process.env.NODE_TLS_REJECT_UNAUTHORIZED
       else process.env.NODE_TLS_REJECT_UNAUTHORIZED = originalValue
+    }
+  })
+
+  test("sanitizes test command environment from runtime provider and TLS config", () => {
+    const keys = [
+      "EASYCODE_PROVIDER",
+      "EASYCODE_EXTRA_CA_CERTS",
+      "EASYCODE_DISABLE_GLOBAL_ENV",
+      "NODE_EXTRA_CA_CERTS",
+      "NODE_TLS_REJECT_UNAUTHORIZED",
+      "DEEPSEEK_API_KEY",
+      "TAVILY_API_KEY",
+    ]
+    const originalValues = new Map(keys.map((key) => [key, process.env[key]]))
+    try {
+      process.env.EASYCODE_PROVIDER = "deepseek"
+      process.env.EASYCODE_EXTRA_CA_CERTS = "/tmp/easycode-ca.pem"
+      process.env.EASYCODE_DISABLE_GLOBAL_ENV = "0"
+      process.env.NODE_EXTRA_CA_CERTS = "/tmp/node-ca.pem"
+      process.env.NODE_TLS_REJECT_UNAUTHORIZED = "0"
+      process.env.DEEPSEEK_API_KEY = "secret"
+      process.env.TAVILY_API_KEY = "secret"
+
+      const env = testCommandEnv()
+
+      expect(env.EASYCODE_DISABLE_GLOBAL_ENV).toBe("1")
+      expect(env.EASYCODE_PROVIDER).toBeUndefined()
+      expect(env.EASYCODE_EXTRA_CA_CERTS).toBeUndefined()
+      expect(env.NODE_EXTRA_CA_CERTS).toBeUndefined()
+      expect(env.NODE_TLS_REJECT_UNAUTHORIZED).toBeUndefined()
+      expect(env.DEEPSEEK_API_KEY).toBeUndefined()
+      expect(env.TAVILY_API_KEY).toBeUndefined()
+    } finally {
+      for (const key of keys) {
+        const value = originalValues.get(key)
+        if (value === undefined) delete process.env[key]
+        else process.env[key] = value
+      }
     }
   })
 

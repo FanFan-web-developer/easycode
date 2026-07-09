@@ -2,6 +2,25 @@
 
 Status: Draft
 
+## Current Roadmap Pointer
+
+- Active stabilization priority: keep the default quality gate deterministic under machine-local EasyCode env files, especially TLS/provider configuration loaded from `~/.easycode/.env`.
+- Active documentation priority: keep roadmap specs aligned with implemented modules instead of leaving implemented slices marked as drafts.
+- Current product priority after stabilization: desktop V1 readiness and release hygiene on top of the local sidecar boundary.
+
+## Step 67: Gate TLS Env Cleanup And Spec Roadmap Hygiene
+
+- Scope: close the quality-gate divergence where the test sub-check inherited Node TLS configuration from global EasyCode env, then align roadmap specs with the implemented LSP/AST and desktop-sidecar state.
+- Implementation:
+  - Updated `dev/quality/quality-gate.ts` so the `tests` check sanitizes `NODE_EXTRA_CA_CERTS` and `NODE_TLS_REJECT_UNAUTHORIZED` in addition to EasyCode/provider/search runtime config.
+  - Added focused `test/unit/quality-gate.test.ts` coverage for the sanitized test command environment.
+  - Updated `specs/010-lsp-ast.md` from Draft to Partial implementation and separated implemented read-only symbol navigation from remaining edit/eval roadmap work.
+  - Added a desktop V1 readiness checklist to `specs/017-desktop-sidecar.md`.
+- Verification:
+  - `bun test test/unit/quality-gate.test.ts test/unit/tls-config.test.ts`: 11 pass, 0 fail.
+  - `bun run typecheck`: pass.
+  - `bun run gate` passed local checks (`typecheck`, `tests`, `eval_fake`, `apix_subset`, `cache_benchmark`, and `build`); the final report failed only at `provider_gate` because the configured DeepSeek provider was unreachable.
+
 ## Step 66: Soften Coordinator Delegation Retry For Main Plan Steps
 
 - Scope: keep explicit subagent-assigned plan steps strict while preventing inferred coordinator-delegation suggestions from stopping active main-executor plan steps after validation retries.

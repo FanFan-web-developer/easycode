@@ -136,7 +136,7 @@ async function runCommandCheck(name: Extract<QualityGateCheckName, "typecheck" |
   }
 }
 
-function testCommandEnv() {
+export function testCommandEnv() {
   const env: Record<string, string | undefined> = { ...process.env, EASYCODE_DISABLE_GLOBAL_ENV: "1" }
   for (const key of Object.keys(env)) {
     if (
@@ -150,6 +150,8 @@ function testCommandEnv() {
       key.startsWith("DEEPSEEK_") ||
       key.startsWith("OPENAI_") ||
       key.startsWith("OPENAI_COMPAT_") ||
+      key === "NODE_EXTRA_CA_CERTS" ||
+      key === "NODE_TLS_REJECT_UNAUTHORIZED" ||
       key === "TAVILY_API_KEY"
     ) {
       delete env[key]

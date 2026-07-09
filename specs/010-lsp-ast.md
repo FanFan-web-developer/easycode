@@ -1,6 +1,6 @@
 # LSP and AST Enhancement Spec
 
-Status: Draft
+Status: Partial implementation. Read-only TypeScript symbol navigation is implemented; symbol-aware edit execution and dedicated eval fixtures remain roadmap items.
 
 ## Objective
 
@@ -39,3 +39,9 @@ LSP/AST support improves EasyCode beyond text search by giving the agent code-st
 - `find_definition` and `find_references` accept name, qualified name, or symbol id selectors so same-name collisions can be narrowed semantically instead of falling back to raw text matches.
 - TypeScript method symbols now carry owner-aware ids and qualified names such as `src/auth.AuthService.login`, which lets read-only navigation distinguish same-name methods on different receiver types in the same file.
 - Call-edge resolution now uses high-confidence receiver type hints from TypeScript parameters, local declarations, `new T()` initializers, and `this.method()` so `call_graph` and `find_references` can target the owning class or interface method before falling back to raw name matching.
+
+## Remaining Roadmap
+
+- Keep symbol lookup read-only until edit-boundary behavior is proven with focused tests.
+- Add eval fixtures that compare symbol lookup against text search on same-name collisions.
+- Promote symbol-aware edits only after affected references, excluded same-name matches, and rollback boundaries are visible in the proposed plan.
