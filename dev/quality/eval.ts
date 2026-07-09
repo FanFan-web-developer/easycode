@@ -15,6 +15,7 @@ export type EvalTask = {
   mode: AgentMode
   prompt: string
   fixture: string
+  gitFixture?: boolean
   providers?: ProviderName[]
   tools?: "builtin" | "none"
   expected: {
@@ -63,7 +64,7 @@ async function snapshotFiles(root: string) {
   const out = new Map<string, string>()
   const walk = async (dir: string) => {
     for (const entry of await readdir(dir, { withFileTypes: true })) {
-      if (entry.name === "node_modules") continue
+      if (entry.name === "node_modules" || entry.name === ".git") continue
       const full = path.join(dir, entry.name)
       if (entry.isDirectory()) {
         await walk(full)
@@ -96,6 +97,7 @@ export async function runEval(input: { provider: EvalProvider; root?: string; lo
     const workdir = path.join(os.tmpdir(), `easycode-${task.id}-${Date.now()}`)
     await copyDir(path.join(projectRoot, task.fixture), workdir)
     await mkdir(path.join(workdir, ".easycode"), { recursive: true })
+    if (task.gitFixture) await initializeGitFixture(workdir)
     const before = await snapshotFiles(workdir)
     const logger = input.logger ? (() => {
       const base = createLogger({ root: workdir, session: task.id })
@@ -142,6 +144,24 @@ export async function runEval(input: { provider: EvalProvider; root?: string; lo
     await rm(workdir, { recursive: true, force: true })
   }
   return results
+}
+
+async function initializeGitFixture(workdir: string) {
+  await runGitFixtureCommand(workdir, ["init"])
+  await runGitFixtureCommand(workdir, ["config", "user.email", "eval@example.invalid"])
+  await runGitFixtureCommand(workdir, ["config", "user.name", "EasyCode Eval"])
+  await runGitFixtureCommand(workdir, ["add", "."])
+  await runGitFixtureCommand(workdir, ["commit", "-m", "initial fixture"])
+}
+
+async function runGitFixtureCommand(workdir: string, args: string[]) {
+  const proc = Bun.spawn(["git", ...args], { cwd: workdir, stdout: "pipe", stderr: "pipe" })
+  const [stdout, stderr, exitCode] = await Promise.all([
+    new Response(proc.stdout).text(),
+    new Response(proc.stderr).text(),
+    proc.exited,
+  ])
+  if (exitCode !== 0) throw new Error(`git ${args.join(" ")} failed: ${stderr || stdout || `exit ${exitCode}`}`)
 }
 
 function outputContainsText(values: Array<string | undefined>, expected: string) {

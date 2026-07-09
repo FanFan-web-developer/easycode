@@ -1,6 +1,6 @@
 # LSP and AST Enhancement Spec
 
-Status: Partial implementation. Read-only TypeScript symbol navigation is implemented; symbol-aware edit execution and dedicated eval fixtures remain roadmap items.
+Status: Partial implementation. Read-only TypeScript symbol navigation, symbol-aware edit planning, bounded fake-provider rename execution, and rollback eval coverage are implemented; real-provider promotion remains a roadmap item.
 
 ## Objective
 
@@ -43,9 +43,10 @@ LSP/AST support improves EasyCode beyond text search by giving the agent code-st
 - `EC-015` adds a deterministic fake eval fixture for same-name method collisions, requiring qualified `find_definition` and `find_references` lookups to resolve `InvoiceService.format` while excluding `ReportService.format`.
 - `EC-016` exercises the symbol-aware edit proposal boundary in plan mode: it requires definition/reference lookup before `plan_exit`, keeps the fixture read-only, and verifies the final proposed plan names target symbols, owning definitions, affected references, excluded same-name matches, edit boundaries, and rollback checks.
 - `EC-017` exercises a deterministic symbol-aware rename execution path: the run resolves `InvoiceService.format`, edits only the owning definition plus verified reference, leaves `ReportService.format` untouched, and performs post-edit semantic checks for old/new symbol references.
+- `EC-018` exercises rollback behavior for a failed symbol-aware edit: the eval initializes a git-backed fixture, performs a partial method rename, detects failed semantic verification, restores the changed file with `git_restore_guarded`, and confirms `InvoiceService.format` is back at its original definition.
 
 ## Remaining Roadmap
 
-- Keep symbol lookup read-only until edit-boundary behavior is proven with focused tests.
-- Expand eval coverage from deterministic fake same-name collision, edit-boundary planning, and bounded rename execution to real-provider behavior before promoting generic symbol-aware edits.
+- Keep generic symbol-aware edits behind focused eval coverage until real-provider behavior is proven.
+- Expand eval coverage from deterministic fake same-name collision, edit-boundary planning, bounded rename execution, and rollback behavior to real-provider behavior before promoting generic symbol-aware edits.
 - Promote generic symbol-aware edit execution only after rollback behavior and post-edit verification are covered outside the deterministic fake-provider path.

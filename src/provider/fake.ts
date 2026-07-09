@@ -841,6 +841,59 @@ export class FakeProvider implements Provider {
       yield { type: "done" }
       return
     }
+    if (prompt.includes("symbol-aware edit rollback eval")) {
+      const results = toolResults(input.messages)
+      const definitions = results.filter((result) => result.toolName === "find_definition")
+      const references = results.filter((result) => result.toolName === "find_references")
+      const edits = results.filter((result) => result.toolName === "edit")
+      const restores = results.filter((result) => result.toolName === "git_restore_guarded")
+      if (definitions.length === 0) {
+        yield { type: "tool_call", call: call("find_definition", { symbol: "src/billing.InvoiceService.format", language: "typescript" }) }
+        yield { type: "done" }
+        return
+      }
+      if (references.length === 0) {
+        yield { type: "tool_call", call: call("find_references", { symbol: "src/billing.InvoiceService.format", language: "typescript" }) }
+        yield { type: "done" }
+        return
+      }
+      if (edits.length === 0) {
+        yield { type: "tool_call", call: call("edit", { filePath: "src/billing.ts", oldString: "format(total: number): string", newString: "formatInvoice(total: number): string" }) }
+        yield { type: "done" }
+        return
+      }
+      if (references.length === 1) {
+        yield { type: "tool_call", call: call("find_references", { symbol: "src/billing.InvoiceService.formatInvoice", language: "typescript" }) }
+        yield { type: "done" }
+        return
+      }
+      if (restores.length === 0) {
+        yield { type: "tool_call", call: call("git_restore_guarded", { files: ["src/billing.ts"], worktree: true }) }
+        yield { type: "done" }
+        return
+      }
+      if (definitions.length === 1) {
+        yield { type: "tool_call", call: call("find_definition", { symbol: "src/billing.InvoiceService.format", language: "typescript" }) }
+        yield { type: "done" }
+        return
+      }
+      const initialReferences = references[0]?.output ?? ""
+      const newReferencesAfterPartialEdit = references[1]?.output ?? ""
+      const restoredDefinition = definitions[1]?.output ?? ""
+      const restored = restores[0]?.status === "succeeded"
+        && initialReferences.includes("src/checkout.ts:4")
+        && newReferencesAfterPartialEdit.includes("No matches")
+        && restoredDefinition.includes("src/billing.ts:2")
+        && restoredDefinition.includes("format(total")
+      yield {
+        type: "text_delta",
+        text: restored
+          ? "Symbol-aware edit rollback passed: partial rename failed semantic verification; git_restore_guarded restored src/billing.ts; InvoiceService.format remains at src/billing.ts:2 and src/checkout.ts:4."
+          : "Symbol-aware edit rollback failed semantic verification.",
+      }
+      yield { type: "done" }
+      return
+    }
     if (prompt.includes("run code safely")) {
       const providerText = input.providerMessages.map((message) => message.content).join("\n")
       const recalled = providerText.includes("<project_memory_recall>") && providerText.includes("safeSandbox")

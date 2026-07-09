@@ -1,0 +1,21 @@
+{
+  "id": "EC-018",
+  "mode": "build",
+  "prompt": "symbol-aware edit rollback eval: attempt a partial rename of InvoiceService.format, detect failed semantic verification, and roll back.",
+  "fixture": "evals/fixtures/semantic-collision",
+  "gitFixture": true,
+  "providers": ["fake"],
+  "expected": {
+    "status": "passed",
+    "forbiddenFiles": ["src/billing.ts", "src/checkout.ts", "src/reporting.ts"],
+    "requiredTools": ["find_definition", "find_references", "edit", "git_restore_guarded"],
+    "outputContains": [
+      "partial rename failed semantic verification",
+      "git_restore_guarded restored src/billing.ts",
+      "InvoiceService.format remains",
+      "src/billing.ts:2",
+      "src/checkout.ts:4"
+    ],
+    "maxToolCalls": 7
+  }
+}
