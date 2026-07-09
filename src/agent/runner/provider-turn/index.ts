@@ -222,7 +222,10 @@ function startProviderProgressTimer(
 }
 
 function providerFailureText(error: ProviderError) {
-  return error.output?.trim() || error.message
+  const message = error.message.trim()
+  const output = error.output?.trim()
+  if (!output || output === message) return message
+  return `${message}\n${output}`
 }
 
 function errorCode(error: unknown) {

@@ -16,6 +16,19 @@ describe("eval failure reasons", () => {
     expect(failureReasonForEvalResult(result)).toBe("run failed: DeepSeek API failed: unable to get local issuer certificate")
   })
 
+  test("keeps provider diagnostic context ahead of friendly output", () => {
+    const result: AgentRunResult = {
+      status: "failed",
+      failureReason: "provider_error",
+      text: "DeepSeek API failed: Unable to connect. Is the computer able to access the url? (cause: unable to get local issuer certificate)\nWas there a typo in the url or port?",
+      messages: [],
+      usedTools: [],
+      state: "failed",
+    }
+
+    expect(failureReasonForEvalResult(result)).toBe("run failed: DeepSeek API failed: Unable to connect. Is the computer able to access the url? (cause: unable to get local issuer certificate)")
+  })
+
   test("returns undefined for completed runs", () => {
     const result: AgentRunResult = {
       status: "completed",
