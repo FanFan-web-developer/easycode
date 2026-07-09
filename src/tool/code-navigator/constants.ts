@@ -1,5 +1,5 @@
 import path from "node:path"
-import { easycodeGlobalProjectDir, homeRelativePath } from "../../easycode-path"
+import { easycodeDir, homeRelativePath } from "../../easycode-path"
 
 export const repoMapGeneratorVersion = "1"
 export const codeIndexGeneratorVersion = "10"
@@ -10,11 +10,11 @@ export const ignoredDirs = new Set([".git", "node_modules", ".easycode", "dist",
 export const codeExtensions = new Set([".ts", ".tsx", ".js", ".jsx", ".mjs", ".cjs", ".py", ".go", ".rs", ".java", ".kt", ".kts", ".swift", ".c", ".h", ".cpp", ".cc", ".hpp", ".cs", ".php", ".rb"])
 
 export function repoMapCacheFile(root: string) {
-  return path.join(easycodeGlobalProjectDir(root), "cache", "repo-map.json")
+  return path.join(easycodeDir(root), "cache", "repo-map.json")
 }
 
 export function codeIndexCacheFile(root: string) {
-  return path.join(easycodeGlobalProjectDir(root), "cache", "code-index", "index.json")
+  return path.join(easycodeDir(root), "cache", "code-index", "index.json")
 }
 
 export function repoMapCachePath(root: string) {

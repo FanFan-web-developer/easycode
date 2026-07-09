@@ -95,6 +95,7 @@ export async function runEval(input: { provider: EvalProvider; root?: string; lo
     }
     const workdir = path.join(os.tmpdir(), `easycode-${task.id}-${Date.now()}`)
     await copyDir(path.join(projectRoot, task.fixture), workdir)
+    await mkdir(path.join(workdir, ".easycode"), { recursive: true })
     const before = await snapshotFiles(workdir)
     const logger = input.logger ? (() => {
       const base = createLogger({ root: workdir, session: task.id })

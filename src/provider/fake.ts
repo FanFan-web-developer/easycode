@@ -725,6 +725,29 @@ export class FakeProvider implements Provider {
       yield { type: "done" }
       return
     }
+    if (prompt.includes("same-name symbol collision eval")) {
+      if (!hasToolResult(input.messages, "find_definition")) {
+        yield { type: "tool_call", call: call("find_definition", { symbol: "src/billing.InvoiceService.format", language: "typescript" }) }
+        yield { type: "done" }
+        return
+      }
+      if (!hasToolResult(input.messages, "find_references")) {
+        yield { type: "tool_call", call: call("find_references", { symbol: "src/billing.InvoiceService.format", language: "typescript" }) }
+        yield { type: "done" }
+        return
+      }
+      const definition = latestToolResult(input.messages, "find_definition")?.output ?? ""
+      const references = latestToolResult(input.messages, "find_references")?.output ?? ""
+      const resolved = definition.includes("src/billing.ts:2") && references.includes("src/checkout.ts:4") && !references.includes("src/reporting.ts")
+      yield {
+        type: "text_delta",
+        text: resolved
+          ? "InvoiceService.format resolved at src/billing.ts:2; reference found at src/checkout.ts:4; excluded ReportService.format."
+          : "Semantic collision lookup failed.",
+      }
+      yield { type: "done" }
+      return
+    }
     if (prompt.includes("run code safely")) {
       const providerText = input.providerMessages.map((message) => message.content).join("\n")
       const recalled = providerText.includes("<project_memory_recall>") && providerText.includes("safeSandbox")
