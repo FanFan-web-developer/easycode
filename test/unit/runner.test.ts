@@ -365,7 +365,7 @@ describe("agent runner ui events", () => {
 
       expect(providerCalls).toBe(1)
       expect(result.status).toBe("completed")
-      expect(firstTurnTools).toEqual(["rg_search", "read_lines", "repo_map", "git_diff", "git_status", "plan_exit"])
+      expect(firstTurnTools).toEqual(["rg_search", "read_lines", "find_definition", "find_references", "call_graph", "repo_map", "git_diff", "git_status", "plan_exit"])
       expect(result.usedTools).toEqual([])
       expect(result.text).toContain("# Plan")
     } finally {
@@ -408,7 +408,7 @@ describe("agent runner ui events", () => {
       const result = await runner.run("review 当前代码", "build")
 
       expect(result.status).toBe("completed")
-      expect(toolNames).toEqual(["rg_search", "read_lines", "repo_map", "git_diff", "git_status"])
+      expect(toolNames).toEqual(["rg_search", "read_lines", "find_definition", "find_references", "call_graph", "repo_map", "git_diff", "git_status"])
       expect(toolNames).not.toContain("patch")
       expect(toolNames).not.toContain("edit")
       expect(toolNames).not.toContain("git_stage")
@@ -417,8 +417,8 @@ describe("agent runner ui events", () => {
       expect(toolsetEvent?.detail).toMatchObject({
         reason: "read_only_review",
         narrowed: true,
-        requestedToolCount: 5,
-        availableToolCount: 5,
+        requestedToolCount: 8,
+        availableToolCount: 8,
       })
     } finally {
       await rm(root, { recursive: true, force: true })
@@ -485,7 +485,7 @@ describe("agent runner ui events", () => {
       }).run("review 当前代码", "build")
 
       expect(result.status).toBe("completed")
-      expect(toolsets[0]).toEqual(["rg_search", "read_lines", "repo_map", "git_diff", "git_status", "delegate_subagent", "plan_step_complete", "plan_step_fail"])
+      expect(toolsets[0]).toEqual(["rg_search", "read_lines", "find_definition", "find_references", "call_graph", "repo_map", "git_diff", "git_status", "delegate_subagent", "plan_step_complete", "plan_step_fail"])
       expect(toolsets[1]).toEqual(toolsets[0])
       expect(toolsets[2]).toEqual(toolsets[0])
       expect(toolsets[2]).not.toContain("patch")
@@ -551,7 +551,7 @@ describe("agent runner ui events", () => {
       }).run("review 当前代码", "build")
 
       expect(result.status).toBe("completed")
-      expect(toolNames).toEqual(["rg_search", "read_lines", "repo_map", "git_diff", "git_status", "delegate_subagent", "plan_step_complete", "plan_step_fail"])
+      expect(toolNames).toEqual(["rg_search", "read_lines", "find_definition", "find_references", "call_graph", "repo_map", "git_diff", "git_status", "delegate_subagent", "plan_step_complete", "plan_step_fail"])
       expect(toolNames).not.toContain("patch")
       expect(toolNames).not.toContain("edit")
       expect(toolNames).not.toContain("git_stage")

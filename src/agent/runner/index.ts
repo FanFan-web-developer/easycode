@@ -44,8 +44,9 @@ import type { AgentRunState, SubagentRole } from "../types"
 const coordinatorDelegationGateBypassProviders = new Set(["fake", "test-provider", "simulated"])
 const defaultNetworkRetryDelaysMs = [1_000, 2_000, 3_000, 4_000, 5_000]
 const subagentRoles: SubagentRole[] = ["summary", "explorer", "reviewer", "debugger", "tester", "docs_researcher"]
-const planningInspectionToolNames = new Set(["git_status", "git_diff", "rg_search", "read_lines", "repo_map", "plan_exit"])
-const readOnlyReviewToolNames = new Set(["git_status", "git_diff", "rg_search", "read_lines", "repo_map"])
+const semanticInspectionToolNames = ["find_definition", "find_references", "call_graph"]
+const planningInspectionToolNames = new Set(["git_status", "git_diff", "rg_search", "read_lines", ...semanticInspectionToolNames, "repo_map", "plan_exit"])
+const readOnlyReviewToolNames = new Set(["git_status", "git_diff", "rg_search", "read_lines", ...semanticInspectionToolNames, "repo_map"])
 const activePlanControlToolNames = new Set(["plan_step_complete", "plan_step_fail"])
 const readOnlyDelegationFallbackToolNames = new Set([
   "read",
