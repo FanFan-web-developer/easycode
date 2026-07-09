@@ -40,9 +40,10 @@ LSP/AST support improves EasyCode beyond text search by giving the agent code-st
 - TypeScript method symbols now carry owner-aware ids and qualified names such as `src/auth.AuthService.login`, which lets read-only navigation distinguish same-name methods on different receiver types in the same file.
 - Call-edge resolution now uses high-confidence receiver type hints from TypeScript parameters, local declarations, `new T()` initializers, and `this.method()` so `call_graph` and `find_references` can target the owning class or interface method before falling back to raw name matching.
 - `EC-015` adds a deterministic fake eval fixture for same-name method collisions, requiring qualified `find_definition` and `find_references` lookups to resolve `InvoiceService.format` while excluding `ReportService.format`.
+- `EC-016` exercises the symbol-aware edit proposal boundary in plan mode: it requires definition/reference lookup before `plan_exit`, keeps the fixture read-only, and verifies the final proposed plan names target symbols, owning definitions, affected references, excluded same-name matches, edit boundaries, and rollback checks.
 
 ## Remaining Roadmap
 
 - Keep symbol lookup read-only until edit-boundary behavior is proven with focused tests.
-- Expand eval coverage from deterministic fake same-name collisions to real-provider behavior before promoting symbol-aware edits.
-- Promote symbol-aware edits only after affected references, excluded same-name matches, and rollback boundaries are visible in the proposed plan.
+- Expand eval coverage from deterministic fake same-name collision and edit-boundary planning to real-provider behavior before promoting symbol-aware edits.
+- Promote symbol-aware edit execution only after affected references, excluded same-name matches, rollback boundaries, and post-edit verification are covered by implementation tests.

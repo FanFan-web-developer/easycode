@@ -1,0 +1,27 @@
+{
+  "id": "EC-016",
+  "mode": "plan",
+  "prompt": "symbol-aware edit boundary eval: plan a safe rename of InvoiceService.format without editing files.",
+  "fixture": "evals/fixtures/semantic-collision",
+  "providers": ["fake"],
+  "expected": {
+    "status": "passed",
+    "forbiddenFiles": ["src/billing.ts", "src/checkout.ts", "src/reporting.ts"],
+    "requiredTools": ["find_definition", "find_references", "plan_exit"],
+    "outputContains": [
+      "<proposed_plan>",
+      "Target symbol",
+      "InvoiceService.format",
+      "Owning definition",
+      "src/billing.ts:2",
+      "Affected references/callers",
+      "src/checkout.ts:4",
+      "Excluded same-name matches",
+      "ReportService.format",
+      "Edit boundaries",
+      "do not edit src/reporting.ts",
+      "Rollback and verification"
+    ],
+    "maxToolCalls": 3
+  }
+}

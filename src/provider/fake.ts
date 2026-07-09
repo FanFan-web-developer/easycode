@@ -417,6 +417,38 @@ export class FakeProvider implements Provider {
     }
 
     if (input.mode === "plan") {
+      if (prompt.includes("symbol-aware edit boundary eval")) {
+        if (!hasToolResult(input.messages, "find_definition")) {
+          yield { type: "tool_call", call: call("find_definition", { symbol: "src/billing.InvoiceService.format", language: "typescript" }) }
+          yield { type: "done" }
+          return
+        }
+        if (!hasToolResult(input.messages, "find_references")) {
+          yield { type: "tool_call", call: call("find_references", { symbol: "src/billing.InvoiceService.format", language: "typescript" }) }
+          yield { type: "done" }
+          return
+        }
+        if (!hasToolResult(input.messages, "plan_exit")) {
+          const definition = latestToolResult(input.messages, "find_definition")?.output ?? ""
+          const references = latestToolResult(input.messages, "find_references")?.output ?? ""
+          const resolved = definition.includes("src/billing.ts:2") && references.includes("src/checkout.ts:4") && !references.includes("src/reporting.ts")
+          const planMarkdown = resolved
+            ? [
+              "# Symbol-aware edit boundary plan",
+              "",
+              "- Target symbol: `InvoiceService.format` (`src/billing.InvoiceService.format`).",
+              "- Owning definition: `src/billing.ts:2`.",
+              "- Affected references/callers: `src/checkout.ts:4`.",
+              "- Excluded same-name matches: `ReportService.format` in `src/reporting.ts`.",
+              "- Edit boundaries: only update the owning definition and verified references; do not edit `src/reporting.ts`.",
+              "- Rollback and verification: revert the bounded edit if tests or symbol lookup show extra references.",
+            ].join("\n")
+            : "# Symbol-aware edit boundary plan\n\n- Semantic lookup failed; do not edit."
+          yield { type: "tool_call", call: call("plan_exit", { markdown: planMarkdown }) }
+          yield { type: "done" }
+          return
+        }
+      }
       if (prompt.includes("goal-delegated-e2e") && !hasToolResult(input.messages, "plan_exit")) {
         const planMarkdown = [
           "# Goal delegated e2e plan",
@@ -789,6 +821,37 @@ export class FakeProvider implements Provider {
       return
     }
     if (input.prompt.includes("Markdown Plan:")) {
+      if (input.prompt.includes("symbol-aware edit boundary eval")) {
+        yield {
+          type: "text_delta",
+          text: `\`\`\`json
+{
+  "id": "plan_symbol_boundary_eval",
+  "title": "Symbol-aware edit boundary plan",
+  "lowRisk": true,
+  "steps": [
+    {
+      "id": "step_1",
+      "goal": "Target symbol: InvoiceService.format (src/billing.InvoiceService.format); Owning definition: src/billing.ts:2.",
+      "kind": "inspect",
+      "targetFiles": ["src/billing.ts"],
+      "doneWhen": "Affected references/callers include src/checkout.ts:4.",
+      "fallback": "Excluded same-name matches: ReportService.format in src/reporting.ts."
+    },
+    {
+      "id": "step_2",
+      "goal": "Edit boundaries: only update the owning definition and verified references; do not edit src/reporting.ts.",
+      "kind": "verify",
+      "targetFiles": ["src/billing.ts", "src/checkout.ts"],
+      "doneWhen": "Rollback and verification: revert the bounded edit if tests or symbol lookup show extra references."
+    }
+  ]
+}
+\`\`\``,
+        }
+        yield { type: "done" }
+        return
+      }
       yield {
         type: "text_delta",
         text: `\`\`\`json
