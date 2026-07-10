@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test"
-import { composerStateAfterQueuedInput, createQueuedRunInput, dequeueQueuedRunInput, isCancelRunInput, isRunProducingSlashInput, queuedInputLabel, shouldDetachActiveRunForWorkspaceSwitch, shouldQueueRunInput, shortQueuedPrompt } from "../../apps/desktop/src/renderer/run-queue"
+import { composerStateAfterQueuedInput, createQueuedRunInput, dequeueQueuedRunInput, isCancelRunInput, isRunProducingSlashInput, queuedInputLabel, removeQueuedRunInput, shouldDetachActiveRunForWorkspaceSwitch, shouldQueueRunInput, shortQueuedPrompt } from "../../apps/desktop/src/renderer/run-queue"
 
 describe("desktop run queue", () => {
   test("matches CLI cancel inputs while a run is active", () => {
@@ -105,6 +105,14 @@ describe("desktop run queue", () => {
     expect(dequeueQueuedRunInput(queue, true)).toEqual({ next: undefined, remaining: queue })
     expect(dequeueQueuedRunInput([], false)).toEqual({ next: undefined, remaining: [] })
     expect(dequeueQueuedRunInput(queue, false)).toEqual({ next: first, remaining: [second] })
+  })
+
+  test("removes only the selected queued input", () => {
+    const first = createQueuedRunInput({ text: "first", mode: "build", permissionMode: "ask", images: [], files: [] }, "queue_1", 1)
+    const second = createQueuedRunInput({ text: "second", mode: "plan", permissionMode: "auto-review", images: [], files: [] }, "queue_2", 2)
+
+    expect(removeQueuedRunInput([first, second], "queue_1")).toEqual([second])
+    expect(removeQueuedRunInput([first, second], "missing")).toEqual([first, second])
   })
 
   test("detaches the active run lock only when switching to a different workspace", () => {

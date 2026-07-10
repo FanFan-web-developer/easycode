@@ -11,7 +11,7 @@ import { goalAfterLifecycleEvent, goalLifecycleSummary, planStatusFromResult, ru
 import { PermissionModal, PlanModal } from "./prompt-modals.js"
 import { ProviderSetupModal } from "./provider-setup-modal.js"
 import { providerReadinessError } from "./provider-readiness.js"
-import { composerStateAfterQueuedInput, createQueuedRunInput, dequeueQueuedRunInput, isCancelRunInput, queuedInputLabel, shortQueuedPrompt, shouldDetachActiveRunForWorkspaceSwitch, shouldQueueRunInput, type QueuedRunInput } from "./run-queue.js"
+import { composerStateAfterQueuedInput, createQueuedRunInput, dequeueQueuedRunInput, isCancelRunInput, queuedInputLabel, removeQueuedRunInput, shortQueuedPrompt, shouldDetachActiveRunForWorkspaceSwitch, shouldQueueRunInput, type QueuedRunInput } from "./run-queue.js"
 import { readDesktopSessionSelection, resolveStartupSession, resolveStartupWorkspace, writeDesktopSessionSelection } from "./session-selection-state.js"
 import { draftSessionId as createDraftSessionId, draftSessionPromptPlan, mergeSessionListPreservingOrder, planWorkspaceRemoval, removeSessionPreview, sessionIdFromPrompt, sessionSwitchSlashCommand, titleFromPrompt, upsertSessionPreview as upsertSessionPreviewState, workspaceRemovalClearsDraft, workspaceRoots, workspaceSwitchPatch } from "./session-workspace-state.js"
 import { effortSettingsCommand, languageSettingsCommand, maxStepsSettingsCommand, maxTokensSettingsCommand, modelSettingsCommand, providerSettingsCommand, thinkingSettingsCommand } from "./settings-commands.js"
@@ -608,7 +608,7 @@ export function App() {
         setRunning(false)
         runningRef.current = false
         activeRunWorkspaceRef.current = undefined
-        setQueuedInputs([])
+        replaceQueuedInputs([])
         setPermission(undefined)
         setPlan(undefined)
       }
@@ -822,9 +822,11 @@ export function App() {
           <Composer
             attachments={attachments}
             onClearAttachments={clearAttachments}
+            onClearQueuedInputs={() => replaceQueuedInputs([])}
             copy={copy}
             onPickFiles={pickFiles}
             onRemoveAttachment={removeAttachment}
+            onRemoveQueuedInput={(id) => replaceQueuedInputs(removeQueuedRunInput(queuedInputsRef.current, id))}
             permissionMode={permissionMode}
             prompt={prompt}
             providerReady={canStartProviderRun}
@@ -839,7 +841,7 @@ export function App() {
             setPrompt={setPrompt}
             setRunMode={setRunMode}
             sendPrompt={sendPrompt}
-            queuedCount={queuedInputs.length}
+            queuedInputs={queuedInputs}
           />
         </div>
       </section>
@@ -926,8 +928,7 @@ export function App() {
       files: attachments.filter((file) => file.kind === "file").map((file) => file.path),
     }, crypto.randomUUID(), Date.now())
     const next = [...queuedInputsRef.current, input]
-    queuedInputsRef.current = next
-    setQueuedInputs(next)
+    replaceQueuedInputs(next)
     const summary = `Queued next input: ${shortQueuedPrompt(text)}`
     appendStatus(summary)
     updateProgress({ ...progressRef.current, summary: `${summary} (${queuedInputLabel(next.length)}).` })
@@ -936,10 +937,14 @@ export function App() {
   function flushQueuedInput() {
     const { next: nextInput, remaining } = dequeueQueuedRunInput(queuedInputsRef.current, runningRef.current)
     if (!nextInput) return
-    queuedInputsRef.current = remaining
-    setQueuedInputs(remaining)
+    replaceQueuedInputs(remaining)
     appendStatus(`Running queued input: ${shortQueuedPrompt(nextInput.text)}`)
     void submitInput(nextInput.text, "queue", nextInput)
+  }
+
+  function replaceQueuedInputs(next: QueuedRunInput[]) {
+    queuedInputsRef.current = next
+    setQueuedInputs(next)
   }
 
   function updateProgress(next: Progress) {

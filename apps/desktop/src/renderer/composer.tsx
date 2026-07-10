@@ -1,7 +1,7 @@
 import type { DesktopProviderReadiness, DesktopReasoningEffort, DesktopSettings } from "../shared/protocol.js"
 import type { Attachment, PermissionMode, RunMode, SelectOption } from "./app-types.js"
 import { providerReadinessLabel } from "./provider-readiness.js"
-import { isRunProducingSlashInput, queuedInputLabel } from "./run-queue.js"
+import { isRunProducingSlashInput, shortQueuedPrompt, type QueuedRunInput } from "./run-queue.js"
 import { defaultSetupModel, effortSelectOptions, modelSelectOptions, normalizeSelectOptions } from "./select-options.js"
 
 export type ComposerCopy = {
@@ -25,23 +25,28 @@ export type ComposerCopy = {
   permission: string
   plan: string
   providerNotReady: string
+  queue: string
+  queuedCount: (count: number) => string
+  removeQueuedInput: (position: number) => string
   send: string
 }
 
-export function Composer({ attachments, copy, onCancelRun, onChangeEffort, onChangeModel, onClearAttachments, onPickFiles, onRemoveAttachment, permissionMode, prompt, providerReady, providerReadiness, queuedCount, runMode, running, sendPrompt, setPermissionMode, setPrompt, setRunMode, settings }: {
+export function Composer({ attachments, copy, onCancelRun, onChangeEffort, onChangeModel, onClearAttachments, onClearQueuedInputs, onPickFiles, onRemoveAttachment, onRemoveQueuedInput, permissionMode, prompt, providerReady, providerReadiness, queuedInputs, runMode, running, sendPrompt, setPermissionMode, setPrompt, setRunMode, settings }: {
   attachments: Attachment[]
   copy: ComposerCopy
   onCancelRun: () => Promise<void>
   onChangeEffort: (effort: DesktopReasoningEffort) => void
   onChangeModel: (model: string) => void
   onClearAttachments: () => Promise<void>
+  onClearQueuedInputs: () => void
   onPickFiles: () => void
   onRemoveAttachment: (id: string) => void
+  onRemoveQueuedInput: (id: string) => void
   permissionMode: PermissionMode
   prompt: string
   providerReady: boolean
   providerReadiness?: DesktopProviderReadiness
-  queuedCount: number
+  queuedInputs: QueuedRunInput[]
   runMode: RunMode
   running: boolean
   sendPrompt: () => void
@@ -61,6 +66,27 @@ export function Composer({ attachments, copy, onCancelRun, onChangeEffort, onCha
     { value: "auto-review", label: copy.autoReview },
   ]
   return <footer className="composer">
+    {queuedInputs.length > 0 && <div className="queue-panel">
+      <div className="queue-panel-head">
+        <strong>{copy.queue}</strong>
+        <span>{copy.queuedCount(queuedInputs.length)}</span>
+        <button type="button" onClick={onClearQueuedInputs}>{copy.clearAll}</button>
+      </div>
+      <div className="queue-list">
+        {queuedInputs.map((input, index) => {
+          const attachmentCount = input.images.length + input.files.length
+          const modeLabel = input.mode === "goal" ? copy.goal : input.mode === "plan" ? copy.plan : copy.build
+          return <div className="queue-row" key={input.id}>
+            <span className="queue-position">{index + 1}</span>
+            <div className="queue-copy">
+              <strong title={input.text}>{shortQueuedPrompt(input.text)}</strong>
+              <small>{modeLabel}{attachmentCount > 0 ? ` · ${copy.attachedCount(attachmentCount)}` : ""}</small>
+            </div>
+            <button className="queue-remove" type="button" onClick={() => onRemoveQueuedInput(input.id)} aria-label={copy.removeQueuedInput(index + 1)} title={copy.removeQueuedInput(index + 1)}>×</button>
+          </div>
+        })}
+      </div>
+    </div>}
     {attachments.length > 0 && <div className="attachments-wrap">
       <div className="attachments-head"><span>{copy.attachedCount(attachments.length)}</span><button onClick={() => { void onClearAttachments() }} disabled={running}>{copy.clearAll}</button></div>
       <div className="attachments">{attachments.map((file) => <button key={file.id} onClick={() => onRemoveAttachment(file.id)} disabled={running}><span>{file.name}</span><small>{file.kind} - {file.size}</small></button>)}</div>
@@ -84,7 +110,6 @@ export function Composer({ attachments, copy, onCancelRun, onChangeEffort, onCha
       <ComposerDropdown className="model-select" disabled={running} label={copy.model} options={modelSelectOptions(provider, model)} value={model} onChange={onChangeModel} />
       <ComposerDropdown className="effort-select" disabled={running} label={copy.effort} options={effortSelectOptions(copy)} value={effort} onChange={(value) => onChangeEffort(value as DesktopReasoningEffort)} />
       {blockedByProvider && <span className="composer-warning">{providerReadiness ? providerReadinessLabel(providerReadiness) : copy.providerNotReady}</span>}
-      {queuedCount > 0 && <span className="queue-chip">{queuedInputLabel(queuedCount)}</span>}
       <button className={`send-button ${running ? "running" : ""}`} onClick={() => {
         if (running) void onCancelRun()
         else void sendPrompt()

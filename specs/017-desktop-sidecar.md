@@ -25,6 +25,14 @@ EasyCode desktop is a local chat-style client that talks to the EasyCode runtime
 
 Supported v1 methods: `initialize`, `listSessions`, `loadSession`, `deleteSession`, `getSettings`, `updateSettings`, `runPrompt`, `cancelRun`, `replyPermission`, `replyPlan`, and `shutdown`.
 
+## Desktop Run Queue
+
+- Run-producing input submitted while a run is active is captured as an immutable local queue snapshot, including mode, permission mode, and attachments.
+- The composer shows queued inputs in execution order and lets the user remove one item or clear the queue without cancelling the active run.
+- Queue mutations update both renderer state and the active queue reference before the next run can flush, so removed inputs cannot execute after the current run completes.
+- Switching away from a workspace with an active run clears its local queue, matching the existing workspace isolation boundary.
+- The queue panel is height-bounded, and the composer controls wrap without horizontal overflow at the Electron minimum window width of 920 px.
+
 ## Desktop Boundary
 
 The Electron app lives under `apps/desktop`. It prefers a bundled platform sidecar from packaged resources, then a user-configured sidecar path, then `easycode` on `PATH`. Renderer code only calls the preload API; all sidecar spawning and filesystem settings are handled in the Electron main process.
@@ -44,6 +52,7 @@ The Electron app lives under `apps/desktop`. It prefers a bundled platform sidec
 - Sidecar protocol stays JSONL-over-stdio and versioned at protocol `1`.
 - The desktop app continues to treat the CLI/runtime as a sidecar boundary, not as renderer-imported runtime internals.
 - Session, settings, provider readiness, plan approval, permission replies, prompt runs, cancellation, and shutdown remain covered by sidecar integration or desktop unit tests.
+- Active-run queue visibility, single-item removal, clear-all behavior, and minimum-width layout remain covered by renderer tests plus a running GUI interaction check.
 - Packaged builds must include a platform sidecar and keep `apps/desktop/.npmrc` on the official npm registry.
 - Release candidates should pass `bun run desktop:build` plus the root quality gate; real-provider failures should be reported separately from local build/test regressions.
 - Cross-platform release validation should cover macOS arm64, Linux x64, and Windows x64 artifacts from `.github/workflows/desktop-release.yml`.

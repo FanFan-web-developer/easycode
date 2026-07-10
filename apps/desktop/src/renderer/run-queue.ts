@@ -76,6 +76,10 @@ export function dequeueQueuedRunInput(queue: QueuedRunInput[], running: boolean)
   return { next, remaining }
 }
 
+export function removeQueuedRunInput(queue: QueuedRunInput[], id: string) {
+  return queue.filter((input) => input.id !== id)
+}
+
 export function shouldDetachActiveRunForWorkspaceSwitch(currentWorkspace: string | undefined, nextWorkspace: string, running: boolean) {
   return running && Boolean(currentWorkspace) && currentWorkspace !== nextWorkspace
 }

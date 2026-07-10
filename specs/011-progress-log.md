@@ -8,6 +8,24 @@ Status: Draft
 - Active documentation priority: keep roadmap specs aligned with implemented modules instead of leaving implemented slices marked as drafts.
 - Current product priority after stabilization: desktop V1 readiness and release hygiene on top of the local sidecar boundary.
 
+## Step 72: Desktop Run Queue Controls And Minimum-Width Layout
+
+- Scope: turn the existing background follow-up queue into a visible, controllable desktop workflow and verify it in a running GUI.
+- Implementation:
+  - Added an ordered queue panel above the composer with mode and attachment context, single-item removal, and clear-all controls.
+  - Added a pure queued-input removal helper and synchronized renderer state/ref updates so a removed item cannot flush after the active run completes.
+  - Added Chinese and English queue copy, bounded queue scrolling, and responsive composer wrapping at the Electron minimum width.
+  - Added focused queue-state and renderer UI contract coverage, and documented the desktop queue contract in `specs/017-desktop-sidecar.md`.
+- Verification:
+  - `bun test test/unit/desktop-run-queue.test.ts test/unit/desktop-renderer-ui.test.ts test/integration/desktop-renderer-ui.test.ts --timeout 30000`: 25 pass, 0 fail.
+  - `bun run typecheck`: pass.
+  - `bun run desktop:build`: pass; sidecar compile, preload bundle, TypeScript, and Vite renderer build all completed.
+  - `bun run electron` launched the latest desktop build without preload, module-resolution, or Electron runtime startup errors.
+  - Playwright ran the built renderer with the preload contract mocked locally: queued two inputs during an active run, removed the first, verified automatic renumbering, cleared all, and confirmed the active run remained cancellable.
+  - Playwright desktop and 920 x 700 screenshots confirmed the queue is readable and the composer remains usable. At 920 px, `scrollWidth` matched `innerWidth`, and the queue clear/cancel controls stayed inside the composer boundary.
+  - `bun run gate` passed local checks (`typecheck`, `tests`, `eval_fake`, `apix_subset`, `cache_benchmark`, and `build`); `provider_gate` failed only because the configured DeepSeek provider was unreachable, with `EC-REAL-001` and `EC-REAL-002` listed inline.
+- Notes: `EC-REAL-003` remains unverified because workspace fixture/code export to the configured external DeepSeek endpoint was rejected by execution policy; no external-provider workaround was used.
+
 ## Step 71: Provider Smoke Failure Details In Unified Gate Reports
 
 - Scope: make real-provider stabilization failures directly actionable from the canonical `bun run gate` Markdown report.
