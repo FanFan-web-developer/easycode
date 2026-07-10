@@ -46,6 +46,7 @@ LSP/AST support improves EasyCode beyond text search by giving the agent code-st
 - `EC-018` exercises rollback behavior for a failed symbol-aware edit: the eval initializes a git-backed fixture, performs a partial method rename, detects failed semantic verification, restores the changed file with `git_restore_guarded`, and confirms `InvoiceService.format` is back at its original definition.
 - `EC-REAL-002` extends real-provider smoke coverage beyond no-tool replies by requiring configured providers to use semantic navigation and produce a read-only symbol-aware rename plan for the same-name collision fixture.
 - `EC-REAL-003` defines an explicit real-provider bounded execution eval for the same rename path: semantic lookup first, edit only the owning definition plus verified reference, keep `ReportService.format` unchanged, then verify old/new symbol references.
+- Eval tasks can now require repeated tool-call counts, so bounded edit and rollback checks can prove pre-edit lookup plus post-edit or post-restore semantic verification happened instead of merely checking that a tool appeared once.
 
 ## Remaining Roadmap
 

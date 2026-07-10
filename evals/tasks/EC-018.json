@@ -9,6 +9,12 @@
     "status": "passed",
     "forbiddenFiles": ["src/billing.ts", "src/checkout.ts", "src/reporting.ts"],
     "requiredTools": ["find_definition", "find_references", "edit", "git_restore_guarded"],
+    "requiredToolCounts": {
+      "find_definition": 2,
+      "find_references": 2,
+      "edit": 1,
+      "git_restore_guarded": 1
+    },
     "outputContains": [
       "partial rename failed semantic verification",
       "git_restore_guarded restored src/billing.ts",

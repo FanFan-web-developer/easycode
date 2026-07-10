@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test"
-import { failureReasonForEvalResult } from "../../dev/quality/eval"
+import { failureReasonForEvalResult, missingRequiredToolCount } from "../../dev/quality/eval"
 import type { AgentRunResult } from "../../src/agent"
 
 describe("eval failure reasons", () => {
@@ -39,5 +39,23 @@ describe("eval failure reasons", () => {
     }
 
     expect(failureReasonForEvalResult(result)).toBeUndefined()
+  })
+
+  test("detects missing required repeated tool calls", () => {
+    expect(missingRequiredToolCount(["find_definition", "find_references", "edit", "find_references"], {
+      find_references: 3,
+      edit: 1,
+    })).toEqual({
+      tool: "find_references",
+      actual: 2,
+      minimum: 3,
+    })
+  })
+
+  test("accepts required repeated tool calls when counts are met", () => {
+    expect(missingRequiredToolCount(["find_definition", "find_references", "edit", "find_references", "find_references"], {
+      find_references: 3,
+      edit: 1,
+    })).toBeUndefined()
   })
 })

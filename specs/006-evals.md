@@ -14,6 +14,7 @@
     "changedFiles": ["src/add.ts"],
     "forbiddenFiles": [".env"],
     "requiredTools": ["read", "edit", "bash"],
+    "requiredToolCounts": { "bash": 1 },
     "maxToolCalls": 12
   }
 }
@@ -34,7 +35,7 @@
 - `EC-REAL-002`: Real provider semantic-planning smoke eval that requires `find_definition`, `find_references`, and `plan_exit` for a same-name symbol rename plan without editing files.
 - `EC-REAL-003`: Explicit real-provider bounded execution eval for a semantic rename of `InvoiceService.format` to `formatInvoice`, requiring semantic lookup before editing and preserving `ReportService.format`.
 
-Tasks without `providers` are fake-provider deterministic evals. Real provider evals must opt in with `providers` and should avoid deterministic fake-only tool-sequence assertions unless explicitly intended.
+Tasks without `providers` are fake-provider deterministic evals. Real provider evals must opt in with `providers` and should avoid deterministic fake-only tool-sequence assertions unless explicitly intended. Use `requiredToolCounts` when the eval needs to prove repeated checks, such as pre-edit lookup plus post-edit semantic verification.
 
 ## Cache Benchmark Contract
 - Cache benchmarks support `--suite real` and `--suite all`.

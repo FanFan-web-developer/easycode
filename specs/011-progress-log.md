@@ -8,6 +8,22 @@ Status: Draft
 - Active documentation priority: keep roadmap specs aligned with implemented modules instead of leaving implemented slices marked as drafts.
 - Current product priority after stabilization: desktop V1 readiness and release hygiene on top of the local sidecar boundary.
 
+## Step 70: Eval Tool Count Assertions
+
+- Scope: make symbol-aware edit evals prove repeated semantic verification instead of only requiring each tool name once.
+- Implementation:
+  - Added optional `requiredToolCounts` support to the local eval runner.
+  - Added unit coverage for missing and satisfied repeated tool-count requirements.
+  - Updated `EC-017`, `EC-018`, and `EC-REAL-003` to require enough `find_definition`, `find_references`, `edit`, and rollback calls to cover pre-edit lookup plus post-edit or post-restore semantic verification.
+  - Updated `specs/006-evals.md` and `specs/010-lsp-ast.md` with the stronger eval contract.
+- Verification:
+  - `bun test test/unit/eval.test.ts --timeout 30000`: 5 pass, 0 fail.
+  - `bun run dev/quality/eval.ts --provider fake --ids EC-017,EC-018`: both passed with repeated tool-count assertions.
+  - `bun run typecheck`: pass.
+  - `bun run dev/quality/eval.ts --provider fake`: 18/18 fake eval tasks passed; real-provider tasks skipped for fake as expected.
+  - `bun run gate` passed local checks (`typecheck`, `tests`, `eval_fake`, `apix_subset`, `cache_benchmark`, and `build`); the final report failed only at `provider_gate` because the configured DeepSeek provider was unreachable.
+- Notes: this is still a local eval-contract hardening; it does not promote `EC-REAL-003` into the default provider gate.
+
 ## Step 69: Explicit Real Provider Bounded Execution Eval
 
 - Scope: define the next real-provider LSP/AST promotion target without adding an unstable execution eval to the default provider gate.

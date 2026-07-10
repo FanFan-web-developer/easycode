@@ -23,6 +23,7 @@ export type EvalTask = {
     changedFiles?: string[]
     forbiddenFiles?: string[]
     requiredTools?: string[]
+    requiredToolCounts?: Record<string, number>
     maxToolCalls?: number
     outputContains?: string[]
     forbiddenPhrases?: string[]
@@ -112,6 +113,7 @@ export async function runEval(input: { provider: EvalProvider; root?: string; lo
     const after = await snapshotFiles(workdir)
     const expected = expectedForProvider(task, input.provider)
     const missingTool = expected.requiredTools?.find((tool) => !result.usedTools.includes(tool))
+    const missingToolCount = missingRequiredToolCount(result.usedTools, expected.requiredToolCounts)
     const tooManyTools = expected.maxToolCalls !== undefined && result.usedTools.length > expected.maxToolCalls
     const missingChange = expected.changedFiles?.find((filePath) => before.get(filePath) === after.get(filePath))
     const forbiddenChange = expected.forbiddenFiles?.find((filePath) => before.get(filePath) !== after.get(filePath))
@@ -119,7 +121,7 @@ export async function runEval(input: { provider: EvalProvider; root?: string; lo
     const forbiddenPhrase = expected.forbiddenPhrases?.find((text) => outputContainsText([result.reasoning, result.text], text))
     const duplicateInspection = expected.forbidDuplicateInspections ? collectDuplicateInspections(result.messages)[0] : undefined
     const runFailure = failureReasonForEvalResult(result)
-    const passed = result.status === "completed" && !missingTool && !tooManyTools && !missingChange && !forbiddenChange && !missingOutput && !forbiddenPhrase && !duplicateInspection
+    const passed = result.status === "completed" && !missingTool && !missingToolCount && !tooManyTools && !missingChange && !forbiddenChange && !missingOutput && !forbiddenPhrase && !duplicateInspection
     results.push({
       id: task.id,
       passed,
@@ -127,7 +129,9 @@ export async function runEval(input: { provider: EvalProvider; root?: string; lo
         ? runFailure
         : missingTool
         ? `missing tool ${missingTool}`
-        : tooManyTools
+        : missingToolCount
+          ? `tool ${missingToolCount.tool} called ${missingToolCount.actual}/${missingToolCount.minimum} times`
+          : tooManyTools
           ? "too many tool calls"
           : missingChange
             ? `missing expected change ${missingChange}`
@@ -173,6 +177,17 @@ export function failureReasonForEvalResult(result: AgentRunResult) {
   if (result.status === "completed") return undefined
   const line = firstMeaningfulLine(result.text) ?? result.failureReason ?? result.status
   return `run ${result.status}: ${truncateReason(line)}`
+}
+
+export function missingRequiredToolCount(usedTools: string[], requiredCounts: Record<string, number> | undefined) {
+  if (!requiredCounts) return undefined
+  const counts = new Map<string, number>()
+  for (const tool of usedTools) counts.set(tool, (counts.get(tool) ?? 0) + 1)
+  for (const [tool, minimum] of Object.entries(requiredCounts)) {
+    const actual = counts.get(tool) ?? 0
+    if (actual < minimum) return { tool, actual, minimum }
+  }
+  return undefined
 }
 
 function expectedForProvider(task: EvalTask, provider: EvalProvider): EvalTask["expected"] {

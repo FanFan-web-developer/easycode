@@ -9,6 +9,11 @@
     "changedFiles": ["src/billing.ts", "src/checkout.ts"],
     "forbiddenFiles": ["src/reporting.ts"],
     "requiredTools": ["find_definition", "find_references", "edit"],
+    "requiredToolCounts": {
+      "find_definition": 1,
+      "find_references": 3,
+      "edit": 2
+    },
     "outputContains": [
       "real bounded symbol edit ok",
       "src/billing.ts",
