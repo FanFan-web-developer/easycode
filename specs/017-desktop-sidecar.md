@@ -42,6 +42,8 @@ Supported v1 methods: `initialize`, `listSessions`, `loadSession`, `deleteSessio
 - Preview output is capped at 200,000 characters and reports truncation explicitly.
 - The preview keeps the workspace-status ordering and offers previous/next changed-file controls. `Alt+Left` and `Alt+Right` invoke the same navigation while the modal is open.
 - Rapid navigation and modal close invalidate older in-flight diff requests so a late result cannot replace the currently selected file.
+- The Changes panel can refresh Git status on demand, and the diff modal can reread its current file without closing. Both actions reuse the existing workspace-status and workspace-diff IPC paths.
+- Concurrent workspace-status refreshes use latest-request-wins ordering so a slower older snapshot cannot replace a newer result.
 
 ## Desktop Boundary
 
@@ -63,7 +65,7 @@ The Electron app lives under `apps/desktop`. It prefers a bundled platform sidec
 - The desktop app continues to treat the CLI/runtime as a sidecar boundary, not as renderer-imported runtime internals.
 - Session, settings, provider readiness, plan approval, permission replies, prompt runs, cancellation, and shutdown remain covered by sidecar integration or desktop unit tests.
 - Active-run queue visibility, single-item removal, clear-all behavior, and minimum-width layout remain covered by renderer tests plus a running GUI interaction check.
-- Workspace diff path validation, tracked/untracked/binary/deleted behavior, IPC alignment, modal rendering, changed-file navigation, stale-request rejection, file opening, and minimum-width layout remain covered by focused tests and a running GUI interaction check.
+- Workspace diff path validation, tracked/untracked/binary/deleted behavior, IPC alignment, modal rendering, changed-file navigation, manual refresh, stale-request rejection, file opening, and minimum-width layout remain covered by focused tests and a running GUI interaction check.
 - Packaged builds must include a platform sidecar and keep `apps/desktop/.npmrc` on the official npm registry.
 - Release candidates should pass `bun run desktop:build` plus the root quality gate; real-provider failures should be reported separately from local build/test regressions.
 - Cross-platform release validation should cover macOS arm64, Linux x64, and Windows x64 artifacts from `.github/workflows/desktop-release.yml`.

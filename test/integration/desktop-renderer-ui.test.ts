@@ -105,4 +105,20 @@ describe("desktop renderer UI integration", () => {
     expect(workspaceDiff).toContain("workspaceDiffLimit = 200_000")
     expect(workspaceDiff).toContain("File must be a relative path inside the workspace.")
   })
+
+  test("refreshes workspace status and the active diff through existing desktop APIs", async () => {
+    const app = await Bun.file(path.join(repoRoot, "apps/desktop/src/renderer/App.tsx")).text()
+    const contextRail = await Bun.file(path.join(repoRoot, "apps/desktop/src/renderer/context-rail.tsx")).text()
+    const diffModal = await Bun.file(path.join(repoRoot, "apps/desktop/src/renderer/workspace-diff-modal.tsx")).text()
+    const preload = await Bun.file(path.join(repoRoot, "apps/desktop/src/preload/api.cts")).text()
+
+    expect(app).toContain("window.easycode.workspaceStatus(workspaceRoot)")
+    expect(app).toContain("window.easycode.workspaceDiff(filePath, workspaceRoot)")
+    expect(app).toContain("requestId !== workspaceStatusRequestRef.current")
+    expect(app).toContain("refreshWorkspaceDiff(filePath)")
+    expect(contextRail).toContain("onRefresh={onRefreshWorkspaceStatus}")
+    expect(diffModal).toContain("onClick={() => onRefresh(path)}")
+    expect(preload).toContain('workspaceStatus: (workspaceRoot?: string) => invoke<DesktopWorkspaceStatus>("desktop:workspaceStatus", ...optionalArg(workspaceRoot))')
+    expect(preload).toContain('workspaceDiff: (filePath: string, workspaceRoot?: string) => invoke<DesktopWorkspaceDiff>("desktop:workspaceDiff", filePath, ...optionalArg(workspaceRoot))')
+  })
 })

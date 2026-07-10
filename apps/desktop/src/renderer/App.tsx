@@ -42,6 +42,7 @@ export function App() {
   const [contextRailOpen, setContextRailOpen] = useState(false)
   const [providerSetupDismissed, setProviderSetupDismissed] = useState(false)
   const [workspaceStatus, setWorkspaceStatus] = useState<DesktopWorkspaceStatus>()
+  const [workspaceStatusRefreshing, setWorkspaceStatusRefreshing] = useState(false)
   const [workspaceDiff, setWorkspaceDiff] = useState<WorkspaceDiffModalState>()
   const [providerOptions, setProviderOptions] = useState<string[]>([])
   const [providerReadiness, setProviderReadiness] = useState<DesktopProviderReadiness>()
@@ -56,6 +57,7 @@ export function App() {
   const activeRunWorkspaceRef = useRef<string | undefined>(undefined)
   const workspaceSwitchingRef = useRef(false)
   const workspaceDiffRequestRef = useRef(0)
+  const workspaceStatusRequestRef = useRef(0)
   const activePermissionRef = useRef<PermissionRunSnapshot>(permissionRunSnapshot(runMode, permissionMode))
 
   const currentWorkspaceRoot = () => settingsRef.current?.workspaceRoot
@@ -483,9 +485,15 @@ export function App() {
 
   const refreshWorkspaceStatus = async () => {
     const workspaceRoot = currentWorkspaceRoot()
-    const status = await window.easycode.workspaceStatus(workspaceRoot)
-    if (!isCurrentWorkspace(workspaceRoot)) return
-    setWorkspaceStatus(status)
+    const requestId = ++workspaceStatusRequestRef.current
+    setWorkspaceStatusRefreshing(true)
+    try {
+      const status = await window.easycode.workspaceStatus(workspaceRoot)
+      if (requestId !== workspaceStatusRequestRef.current || !isCurrentWorkspace(workspaceRoot)) return
+      setWorkspaceStatus(status)
+    } finally {
+      if (requestId === workspaceStatusRequestRef.current && isCurrentWorkspace(workspaceRoot)) setWorkspaceStatusRefreshing(false)
+    }
   }
 
   const refreshSettingsSurfaces = async () => {
@@ -859,6 +867,7 @@ export function App() {
         onChangeProvider={(provider) => applySettingsCommand(providerSettingsCommand(provider))}
         onChangeThinking={(thinking) => applySettingsCommand(thinkingSettingsCommand(thinking))}
         onClearSkills={clearSkills}
+        onRefreshWorkspaceStatus={() => void refreshWorkspaceStatus().catch((error) => reportUiError(error, "Workspace status refresh failed."))}
         onToggleSkill={toggleSkill}
         onViewFileDiff={(filePath) => void openWorkspaceDiff(filePath)}
         open={contextRailOpen}
@@ -869,6 +878,7 @@ export function App() {
         settings={settings}
         skills={skills}
         status={workspaceStatus}
+        statusRefreshing={workspaceStatusRefreshing}
         workspaceName={workspaceName}
       />
 
@@ -888,6 +898,7 @@ export function App() {
         onClose={closeWorkspaceDiff}
         onNavigate={(filePath) => void openWorkspaceDiff(filePath)}
         onOpenFile={(filePath) => void openWorkspaceFileFromMessage(filePath)}
+        onRefresh={(filePath) => void refreshWorkspaceDiff(filePath)}
       />}
     </main>
   )
@@ -942,6 +953,12 @@ export function App() {
       if (requestId !== workspaceDiffRequestRef.current || !isCurrentWorkspace(workspaceRoot)) return
       setWorkspaceDiff({ status: "error", path: filePath, message: errorMessage(error) })
     }
+  }
+
+  async function refreshWorkspaceDiff(filePath: string) {
+    const statusRefresh = refreshWorkspaceStatus().catch((error) => reportUiError(error, "Workspace status refresh failed."))
+    await openWorkspaceDiff(filePath)
+    await statusRefresh
   }
 
   function closeWorkspaceDiff() {

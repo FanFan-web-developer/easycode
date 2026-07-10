@@ -36,9 +36,10 @@ const alignmentEvidence: CapabilityEvidence[] = [
       { file: "test/unit/desktop-workspace-diff.test.ts", patterns: ["reads unstaged and staged changes", "renders bounded untracked text", "rejects paths that can escape"] },
       { file: "test/unit/desktop-workspace-diff-navigation.test.ts", patterns: ["points forward from the first changed file", "points both ways from a middle changed file", "does not invent targets"] },
       { file: "test/unit/desktop-preload-api.test.ts", patterns: ["desktop:workspaceDiff"] },
+      { file: "test/unit/desktop-renderer-ui.test.ts", patterns: ["refreshes workspace review surfaces with latest-request wins"] },
     ],
     integration: [
-      { file: "test/integration/desktop-renderer-ui.test.ts", patterns: ["wires changed files to the bounded workspace diff modal"] },
+      { file: "test/integration/desktop-renderer-ui.test.ts", patterns: ["wires changed files to the bounded workspace diff modal", "refreshes workspace status and the active diff through existing desktop APIs"] },
     ],
   },
   {

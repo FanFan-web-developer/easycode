@@ -18,14 +18,16 @@ type WorkspaceDiffCopy = {
   noDiffAvailable: string
   openFileInVscode: string
   previousDiff: string
+  refreshCurrentDiff: string
 }
 
-export function WorkspaceDiffModal({ copy, navigation, onClose, onNavigate, onOpenFile, state }: {
+export function WorkspaceDiffModal({ copy, navigation, onClose, onNavigate, onOpenFile, onRefresh, state }: {
   copy: WorkspaceDiffCopy
   navigation: WorkspaceDiffNavigation
   onClose: () => void
   onNavigate: (filePath: string) => void
   onOpenFile: (filePath: string) => void
+  onRefresh: (filePath: string) => void
   state: WorkspaceDiffModalState
 }) {
   const path = state.status === "ready" ? state.result.path : state.path
@@ -49,11 +51,14 @@ export function WorkspaceDiffModal({ copy, navigation, onClose, onNavigate, onOp
         <div><h2 id="workspace-diff-title">{copy.diffPreview}</h2><p title={path}>{path}</p></div>
         <button className="diff-modal-close" type="button" onClick={onClose} aria-label={copy.close} title={copy.close}>×</button>
       </div>
-      {navigation.total > 0 && <div className="diff-navigation">
-        <button type="button" onClick={() => navigation.previous && onNavigate(navigation.previous)} disabled={!navigation.previous} aria-label={copy.previousDiff} title={copy.previousDiff}><span aria-hidden="true">←</span></button>
-        <span className="diff-position" aria-live="polite">{copy.diffPosition(navigation.position, navigation.total)}</span>
-        <button type="button" onClick={() => navigation.next && onNavigate(navigation.next)} disabled={!navigation.next} aria-label={copy.nextDiff} title={copy.nextDiff}><span aria-hidden="true">→</span></button>
-      </div>}
+      <div className="diff-navigation">
+        <button className="diff-refresh" type="button" onClick={() => onRefresh(path)} disabled={state.status === "loading"} aria-label={copy.refreshCurrentDiff} title={copy.refreshCurrentDiff}><span className={state.status === "loading" ? "spinning" : ""} aria-hidden="true">↻</span></button>
+        {navigation.total > 0 && <>
+          <button type="button" onClick={() => navigation.previous && onNavigate(navigation.previous)} disabled={!navigation.previous} aria-label={copy.previousDiff} title={copy.previousDiff}><span aria-hidden="true">←</span></button>
+          <span className="diff-position" aria-live="polite">{copy.diffPosition(navigation.position, navigation.total)}</span>
+          <button type="button" onClick={() => navigation.next && onNavigate(navigation.next)} disabled={!navigation.next} aria-label={copy.nextDiff} title={copy.nextDiff}><span aria-hidden="true">→</span></button>
+        </>}
+      </div>
       {state.status === "loading" && <div className="diff-empty">{copy.diffLoading}</div>}
       {state.status === "error" && <p className="setup-error">{state.message}</p>}
       {state.status === "ready" && <>

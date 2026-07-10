@@ -345,6 +345,28 @@ describe("desktop renderer UI contracts", () => {
     expect(source).toContain("const status = await window.easycode.workspaceStatus(workspaceRoot)")
   })
 
+  test("refreshes workspace review surfaces with latest-request wins", async () => {
+    const source = await rendererFile("App.tsx")
+    const contextRail = await rendererFile("context-rail.tsx")
+    const diffModal = await rendererFile("workspace-diff-modal.tsx")
+    const copy = await rendererFile("desktop-copy.ts")
+    const css = await rendererFile("styles.css")
+
+    expect(source).toContain("workspaceStatusRequestRef.current")
+    expect(source).toContain("requestId !== workspaceStatusRequestRef.current")
+    expect(source).toContain("onRefreshWorkspaceStatus={() => void refreshWorkspaceStatus()")
+    expect(source).toContain("async function refreshWorkspaceDiff(filePath: string)")
+    expect(contextRail).toContain('className="panel-refresh-button"')
+    expect(contextRail).toContain("copy.refreshGitChanges")
+    expect(diffModal).toContain('className="diff-refresh"')
+    expect(diffModal).toContain("onRefresh(path)")
+    expect(diffModal).toContain("{navigation.total > 0 && <>")
+    expect(copy).toContain('refreshCurrentDiff: "刷新当前 Git diff"')
+    expect(copy).toContain('refreshGitChanges: "Refresh Git changes"')
+    expect(css).toContain(".panel-refresh-button .spinning")
+    expect(css).toContain(".diff-navigation .diff-refresh")
+  })
+
   test("binds draft session materialization and sidecar requests to the selected workspace", async () => {
     const source = await rendererFile("App.tsx")
     const main = await Bun.file(path.join(import.meta.dir, "../../apps/desktop/src/main/main.ts")).text()

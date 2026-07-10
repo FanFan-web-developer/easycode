@@ -24,6 +24,7 @@ export type ContextRailCopy = {
   on: string
   provider: string
   providerStatus: string
+  refreshGitChanges: string
   run: string
   showAllSkills: (count: number) => string
   showLess: string
@@ -43,6 +44,7 @@ export function ContextRail({
   onChangeProvider,
   onChangeThinking,
   onClearSkills,
+  onRefreshWorkspaceStatus,
   onToggleSkill,
   onViewFileDiff,
   open,
@@ -53,6 +55,7 @@ export function ContextRail({
   settings,
   skills,
   status,
+  statusRefreshing,
   workspaceName,
 }: {
   copy: ContextRailCopy
@@ -62,6 +65,7 @@ export function ContextRail({
   onChangeProvider: (provider: string) => void
   onChangeThinking: (thinking: boolean) => void
   onClearSkills: () => void
+  onRefreshWorkspaceStatus: () => void
   onToggleSkill: (skill: DesktopSkillInfo) => void
   onViewFileDiff: (filePath: string) => void
   open: boolean
@@ -72,6 +76,7 @@ export function ContextRail({
   settings?: DesktopSettings
   skills: DesktopSkillInfo[]
   status?: DesktopWorkspaceStatus
+  statusRefreshing: boolean
   workspaceName: string
 }) {
   return <aside className={`context-rail ${open ? "open" : "collapsed"}`}>
@@ -83,7 +88,7 @@ export function ContextRail({
         <ToggleRow copy={copy} label={copy.thinking} value={settings?.thinking ?? true} onChange={onChangeThinking} />
         <SelectRow label={copy.language} value={settings?.language ?? "en"} options={languageSelectOptions(copy)} onChange={onChangeLanguage} />
       </Panel>
-      <GitChangesPanel copy={copy} onViewFileDiff={onViewFileDiff} status={status} />
+      <GitChangesPanel copy={copy} onRefresh={onRefreshWorkspaceStatus} onViewFileDiff={onViewFileDiff} refreshing={statusRefreshing} status={status} />
       <Panel title={copy.run}>
         <NumberRow label={copy.maxTokens} value={settings?.maxTokens} fallback={32000} onCommit={onChangeContextLimit} />
         <NumberRow label={copy.maxSteps} value={settings?.maxSteps} fallback={66} onCommit={onChangeMaxSteps} />
@@ -93,13 +98,14 @@ export function ContextRail({
   </aside>
 }
 
-function Panel({ children, title }: { children: React.ReactNode; title: string }) {
-  return <section className="rail-panel"><div className="panel-title"><h2>{title}</h2></div>{children}</section>
+function Panel({ action, children, title }: { action?: React.ReactNode; children: React.ReactNode; title: string }) {
+  return <section className="rail-panel"><div className="panel-title"><h2>{title}</h2>{action}</div>{children}</section>
 }
 
-function GitChangesPanel({ copy, onViewFileDiff, status }: { copy: ContextRailCopy; onViewFileDiff: (filePath: string) => void; status?: DesktopWorkspaceStatus }) {
+function GitChangesPanel({ copy, onRefresh, onViewFileDiff, refreshing, status }: { copy: ContextRailCopy; onRefresh: () => void; onViewFileDiff: (filePath: string) => void; refreshing: boolean; status?: DesktopWorkspaceStatus }) {
   const files = status?.files ?? []
-  return <Panel title={copy.changes}>
+  const refreshAction = <button className="panel-refresh-button" type="button" onClick={onRefresh} disabled={refreshing} aria-label={copy.refreshGitChanges} title={copy.refreshGitChanges}><span className={refreshing ? "spinning" : ""} aria-hidden="true">↻</span></button>
+  return <Panel action={refreshAction} title={copy.changes}>
     <InfoRow label={copy.gitBranch} value={status?.branch ?? "unknown"} detail={aheadBehind(status)} />
     <InfoRow label={copy.workingTree} value={status?.clean ? copy.clean : copy.modified} status={status?.clean ? "ok" : "warn"} />
     <div className="git-change-summary">

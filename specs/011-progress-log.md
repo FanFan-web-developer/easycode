@@ -8,6 +8,25 @@ Status: Draft
 - Active documentation priority: keep roadmap specs aligned with implemented modules instead of leaving implemented slices marked as drafts.
 - Current product priority after stabilization: desktop V1 readiness and release hygiene on top of the local sidecar boundary.
 
+## Step 75: Desktop Workspace Review Refresh
+
+- Scope: let desktop users explicitly synchronize Git status and reread the current diff while reviewing changes created outside the current run.
+- Implementation:
+  - Added accessible icon refresh controls to the Changes panel and current diff modal, with localized tooltips and visible loading rotation.
+  - Reused the existing `workspaceStatus` and `workspaceDiff` preload APIs; no sidecar protocol or filesystem boundary was expanded.
+  - Added latest-request-wins sequencing for workspace-status refreshes so overlapping automatic and manual requests cannot apply stale snapshots.
+  - Kept current diff request invalidation intact and refreshes both the selected diff and its surrounding changed-file list.
+  - Added focused renderer, integration, capability-alignment, responsive UI, and running GUI coverage.
+- Verification:
+  - `bun test test/unit/desktop-renderer-ui.test.ts test/unit/desktop-capability-alignment.test.ts test/integration/desktop-renderer-ui.test.ts --timeout 30000`: 20 pass, 0 fail.
+  - `bun run typecheck`: pass.
+  - `bun run desktop:build`: pass; sidecar compile, preload bundle, TypeScript, and Vite renderer build all completed.
+  - `bun run electron` from `apps/desktop` launched the latest final desktop build without preload, IPC, module-resolution, or runtime startup errors.
+  - Playwright started a deliberately slow manual Git refresh, injected a faster `run_done` refresh, and confirmed the final panel retained the newer one-file `+7/-2` snapshot after both requests settled.
+  - Playwright refreshed the active diff, observed the disabled rotating control while loading, and confirmed rendered content advanced from revision 1 to revision 2 while the surrounding status also refreshed. A follow-up clean snapshot removed file navigation and showed the empty-diff state while retaining the current-diff refresh control.
+  - At 920 x 700, `scrollWidth` matched `innerWidth`; the modal stayed inside `24..896`, the diff preview inside `45..875`, the modal refresh control inside `45..75`, and the Changes refresh control inside its `550..910` rail.
+  - Final `bun run gate` passed local checks (`typecheck`, full tests, 18/18 fake evals, 3/3 hard-gate APIx cases, cache benchmark, and build); `provider_gate` failed only because the configured DeepSeek URL was unreachable for `EC-REAL-001` and `EC-REAL-002`.
+
 ## Step 74: Desktop Workspace Diff Navigation
 
 - Scope: review multiple changed files inside the existing diff modal without returning to the context rail after each file.

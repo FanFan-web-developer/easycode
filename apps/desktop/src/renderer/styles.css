@@ -1919,6 +1919,32 @@ pre {
   font-size: 18px;
 }
 
+.panel-title .panel-refresh-button {
+  display: grid;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  border-radius: 6px;
+  font-size: 17px;
+}
+
+.panel-refresh-button:hover:not(:disabled),
+.panel-refresh-button:focus-visible {
+  color: #3157d8;
+  background: #eef3ff;
+}
+
+.panel-refresh-button span,
+.diff-refresh span {
+  display: block;
+}
+
+.panel-refresh-button .spinning,
+.diff-refresh .spinning {
+  animation: spin 0.8s linear infinite;
+}
+
 .panel-inline-actions {
   display: flex;
   align-items: center;
@@ -2542,6 +2568,10 @@ pre {
   color: #aeb7c6;
   background: #f7f8fa;
   cursor: default;
+}
+
+.diff-navigation .diff-refresh {
+  margin-right: auto;
 }
 
 .diff-position {
