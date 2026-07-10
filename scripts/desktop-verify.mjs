@@ -32,6 +32,7 @@ export const desktopCapabilityUnitTests = [
   "test/unit/desktop-app-identity.test.ts",
   "test/unit/desktop-dev-launcher.test.ts",
   "test/unit/desktop-package-scripts.test.ts",
+  "test/unit/desktop-release-verify.test.ts",
 ]
 
 export const desktopCapabilityIntegrationPattern = [

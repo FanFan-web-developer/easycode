@@ -63,6 +63,8 @@ The Electron app lives under `apps/desktop`. It prefers a bundled platform sidec
 - `bun run desktop:dev` builds the local CLI sidecar, builds the desktop app, and starts Electron against the local sidecar.
 - `bun run desktop:build` builds the generic local sidecar plus desktop renderer/main/preload output.
 - `bun run desktop:package` builds the current-platform sidecar binary, builds the desktop app, and packages artifacts into `apps/desktop/release`.
+- Desktop packaging clears stale sidecar binaries and release output before invoking electron-builder, then runs `bun run desktop:verify-release` against the current host or `EASYCODE_DESKTOP_RELEASE_TARGET`.
+- Release verification requires the package version, exact platform artifact names, non-empty installers, and exactly one executable platform sidecar inside the unpacked application. It retains every host supported by `package-desktop.sh`; CI-required targets are macOS arm64 (`dmg`, `zip`), Linux x64 (`AppImage`, `deb`), and Windows x64 (`nsis`, `zip`).
 - CLI releases continue to use `v*` tags through `.github/workflows/release.yml`.
 - Desktop releases use separate `desktop-v*` tags through `.github/workflows/desktop-release.yml`.
 - `bun run desktop:release -- desktop-vX.Y.Z` is the GitHub/CI entrypoint for desktop artifacts. It updates `apps/desktop/package.json` inside the current checkout and runs the desktop packaging chain. `--publish` forwards to electron-builder.
@@ -77,4 +79,4 @@ The Electron app lives under `apps/desktop`. It prefers a bundled platform sidec
 - Workspace diff path validation, staged/unstaged/untracked separation, binary/deleted behavior, IPC alignment, modal rendering, scoped navigation, manual refresh, stale-request rejection, single-file index actions, confirmation/cancellation, file opening, and minimum-width layout remain covered by focused tests and a running GUI interaction check.
 - Packaged builds must include a platform sidecar and keep `apps/desktop/.npmrc` on the official npm registry.
 - Release candidates should pass `bun run desktop:build` plus the root quality gate; real-provider failures should be reported separately from local build/test regressions.
-- Cross-platform release validation should cover macOS arm64, Linux x64, and Windows x64 artifacts from `.github/workflows/desktop-release.yml`.
+- Cross-platform release validation covers macOS arm64, Linux x64, and Windows x64 in `.github/workflows/desktop-release.yml`; each matrix build must pass the release verifier before its `easycode-*` artifacts can be uploaded.

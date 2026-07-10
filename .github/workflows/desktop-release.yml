@@ -31,22 +31,17 @@ jobs:
 
       - run: bun install --frozen-lockfile
 
-      - name: Build desktop artifacts
+      - name: Build and verify desktop artifacts
         shell: bash
+        env:
+          EASYCODE_DESKTOP_RELEASE_TARGET: ${{ matrix.name }}
         run: bash scripts/release-desktop.sh "${GITHUB_REF_NAME}"
 
       - uses: actions/upload-artifact@v4
         with:
           name: desktop-${{ matrix.name }}
-          path: |
-            apps/desktop/release/*.AppImage
-            apps/desktop/release/*.blockmap
-            apps/desktop/release/*.deb
-            apps/desktop/release/*.dmg
-            apps/desktop/release/*.exe
-            apps/desktop/release/*.rpm
-            apps/desktop/release/*.zip
-            apps/desktop/release/latest*.yml
+          path: apps/desktop/release/easycode-*
+          if-no-files-found: error
 
   release:
     name: Create Desktop Release

@@ -7,6 +7,7 @@ describe("desktop verify script", () => {
     const manifest = await Bun.file(path.join(import.meta.dir, "../../package.json")).json() as { scripts?: Record<string, string> }
 
     expect(manifest.scripts?.["desktop:verify"]).toBe("node scripts/desktop-verify.mjs")
+    expect(manifest.scripts?.["desktop:verify-release"]).toBe("node scripts/verify-desktop-release.mjs")
   })
 
   test("runs the unit tests that guard the desktop capability queue", () => {
@@ -33,6 +34,7 @@ describe("desktop verify script", () => {
     expect(desktopCapabilityUnitTests).toContain("test/unit/desktop-renderer-security.test.ts")
     expect(desktopCapabilityUnitTests).toContain("test/unit/desktop-renderer-ui.test.ts")
     expect(desktopCapabilityUnitTests).toContain("test/unit/desktop-app-identity.test.ts")
+    expect(desktopCapabilityUnitTests).toContain("test/unit/desktop-release-verify.test.ts")
   })
 
   test("runs sidecar integration coverage for real desktop capabilities", () => {

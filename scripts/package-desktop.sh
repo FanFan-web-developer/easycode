@@ -35,6 +35,9 @@ info "installing desktop dependencies"
 cd "$DESKTOP_DIR"
 bun install --frozen-lockfile
 
+info "cleaning previous sidecar binaries"
+node -e "const fs = require('node:fs'); const dir = process.argv[1]; if (fs.existsSync(dir)) for (const name of fs.readdirSync(dir)) if (name === 'easycode' || name.startsWith('easycode-')) fs.rmSync(require('node:path').join(dir, name), { force: true, recursive: true })" "$ROOT/dist"
+
 info "building sidecar with $SIDECAR_BUILD"
 cd "$ROOT"
 bun run "$SIDECAR_BUILD"
@@ -43,7 +46,14 @@ info "building desktop renderer/main process"
 cd "$DESKTOP_DIR"
 bun run build
 
+info "cleaning previous desktop artifacts"
+node -e "require('node:fs').rmSync(process.argv[1], { recursive: true, force: true })" "$DESKTOP_DIR/release"
+
 info "packaging desktop client"
 bun run package -- --publish "$PUBLISH"
+
+info "verifying desktop release artifacts"
+cd "$ROOT"
+bun run desktop:verify-release
 
 info "desktop artifacts: $DESKTOP_DIR/release"

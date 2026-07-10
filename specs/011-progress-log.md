@@ -1954,3 +1954,16 @@ Status: Draft
   - Verification:
   - `bun test test/unit/slash.test.ts test/unit/prompt.test.ts test/unit/cli.test.ts test/unit/runner.test.ts`
   - `bun run typecheck`
+
+## Step 60: Deterministic Cross-Platform Desktop Release Verification
+
+- Scope: turn the desktop roadmap's cross-platform packaging requirement into an executable release gate instead of relying on broad artifact upload globs.
+- Implementation:
+  - Added `scripts/verify-desktop-release.mjs` and `bun run desktop:verify-release` to validate expected versioned installers plus the packaged platform sidecar for every existing package host, including the macOS arm64, Linux x64, and Windows x64 CI targets.
+  - Declared explicit electron-builder targets for every CI platform, cleaned stale sidecar binaries and release output before packaging, and made `desktop:package` run release verification before returning success.
+  - Tightened `.github/workflows/desktop-release.yml` so each matrix job supplies its expected target and uploads only verified lowercase `easycode-*` artifacts with missing-output failure enabled.
+  - Added fixture-based verifier coverage and package-script assertions, then synchronized the desktop sidecar readiness checklist with the enforced contract.
+- Code Complete review result:
+  - Correctness: stale installers and sidecar binaries cannot satisfy, bloat, or contaminate a new release, and a matrix build fails before upload when an expected installer or the single platform sidecar is absent.
+  - Maintainability: one small platform table owns artifact names, unpacked resource paths, and sidecar names while the existing capability verifier remains focused on runtime behavior.
+  - Verification: focused tests, a real local macOS arm64 package, the release verifier, desktop capability verification, and the unified quality gate.

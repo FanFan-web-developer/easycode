@@ -38,6 +38,10 @@
       "icon": "build/icon.icns",
       "identity": "-",
       "hardenedRuntime": false,
+      "target": [
+        "dmg",
+        "zip"
+      ],
       "extendInfo": {
         "CFBundleDisplayName": "easycode",
         "CFBundleName": "easycode"
@@ -45,11 +49,19 @@
     },
     "win": {
       "icon": "build/icon.png",
-      "executableName": "easycode"
+      "executableName": "easycode",
+      "target": [
+        "nsis",
+        "zip"
+      ]
     },
     "linux": {
       "icon": "build/icon.png",
-      "executableName": "easycode"
+      "executableName": "easycode",
+      "target": [
+        "AppImage",
+        "deb"
+      ]
     },
     "directories": {
       "output": "release"

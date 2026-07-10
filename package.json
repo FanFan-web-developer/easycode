@@ -27,6 +27,7 @@
     "desktop:dev:insecure": "cd apps/desktop && bun run dev:insecure",
     "desktop:build": "bun run build && cd apps/desktop && bun run build",
     "desktop:verify": "node scripts/desktop-verify.mjs",
+    "desktop:verify-release": "node scripts/verify-desktop-release.mjs",
     "desktop:package": "bash scripts/package-desktop.sh",
     "desktop:release": "bash scripts/release-desktop.sh",
     "desktop:publish": "bash scripts/publish-desktop.sh",
