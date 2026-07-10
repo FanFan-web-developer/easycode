@@ -18,6 +18,7 @@ import { effortSettingsCommand, languageSettingsCommand, maxStepsSettingsCommand
 import { applyDirectDesktopSettings, reconcileDesktopSettingsFromSidecar, restoreLoadedSessionSettings } from "./settings-sync.js"
 import { WorkspaceSidebar } from "./workspace-sidebar.js"
 import { WorkspaceChangesBar } from "./workspace-status-bar.js"
+import { WorkspaceDiffModal, type WorkspaceDiffModalState } from "./workspace-diff-modal.js"
 
 export function App() {
   const [settings, setSettings] = useState<DesktopSettings>()
@@ -40,6 +41,7 @@ export function App() {
   const [contextRailOpen, setContextRailOpen] = useState(false)
   const [providerSetupDismissed, setProviderSetupDismissed] = useState(false)
   const [workspaceStatus, setWorkspaceStatus] = useState<DesktopWorkspaceStatus>()
+  const [workspaceDiff, setWorkspaceDiff] = useState<WorkspaceDiffModalState>()
   const [providerOptions, setProviderOptions] = useState<string[]>([])
   const [providerReadiness, setProviderReadiness] = useState<DesktopProviderReadiness>()
   const [progress, setProgress] = useState<Progress>({ status: "idle", summary: "Ready for a local run.", toolCalls: 0, toolResults: 0 })
@@ -602,6 +604,7 @@ export function App() {
   const selectWorkspace = async (workspaceRoot: string) => {
     if (workspaceRoot === settings?.workspaceRoot) return
     workspaceSwitchingRef.current = true
+    setWorkspaceDiff(undefined)
     try {
       const patch = workspaceSwitchPatch(workspaceRoot)
       if (shouldDetachActiveRunForWorkspaceSwitch(settings?.workspaceRoot, workspaceRoot, runningRef.current)) {
@@ -855,6 +858,7 @@ export function App() {
         onChangeThinking={(thinking) => applySettingsCommand(thinkingSettingsCommand(thinking))}
         onClearSkills={clearSkills}
         onToggleSkill={toggleSkill}
+        onViewFileDiff={(filePath) => void openWorkspaceDiff(filePath)}
         open={contextRailOpen}
         providerOptions={providerOptions}
         providerReadiness={providerReadiness}
@@ -874,6 +878,12 @@ export function App() {
         settings={settings}
         onClose={() => setProviderSetupDismissed(true)}
         onConfigured={configureProvider}
+      />}
+      {workspaceDiff && <WorkspaceDiffModal
+        copy={copy}
+        state={workspaceDiff}
+        onClose={() => setWorkspaceDiff(undefined)}
+        onOpenFile={(filePath) => void openWorkspaceFileFromMessage(filePath)}
       />}
     </main>
   )
@@ -912,6 +922,20 @@ export function App() {
       await window.easycode.openWorkspaceFile(filePath, settingsRef.current?.workspaceRoot)
     } catch (error) {
       appendStatus(copy.cannotOpenFile(filePath, errorMessage(error)))
+    }
+  }
+
+  async function openWorkspaceDiff(filePath: string) {
+    const workspaceRoot = settingsRef.current?.workspaceRoot
+    if (!workspaceRoot) return
+    setWorkspaceDiff({ status: "loading", path: filePath })
+    try {
+      const result = await window.easycode.workspaceDiff(filePath, workspaceRoot)
+      if (!isCurrentWorkspace(workspaceRoot)) return
+      setWorkspaceDiff({ status: "ready", result })
+    } catch (error) {
+      if (!isCurrentWorkspace(workspaceRoot)) return
+      setWorkspaceDiff({ status: "error", path: filePath, message: errorMessage(error) })
     }
   }
 

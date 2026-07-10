@@ -82,4 +82,21 @@ describe("desktop renderer UI integration", () => {
     expect(css).toContain(".activity-group")
     expect(css).toContain(".activity-list")
   })
+
+  test("wires changed files to the bounded workspace diff modal", async () => {
+    const app = await Bun.file(path.join(repoRoot, "apps/desktop/src/renderer/App.tsx")).text()
+    const contextRail = await Bun.file(path.join(repoRoot, "apps/desktop/src/renderer/context-rail.tsx")).text()
+    const diffModal = await Bun.file(path.join(repoRoot, "apps/desktop/src/renderer/workspace-diff-modal.tsx")).text()
+    const main = await Bun.file(path.join(repoRoot, "apps/desktop/src/main/main.ts")).text()
+    const workspaceDiff = await Bun.file(path.join(repoRoot, "apps/desktop/src/main/workspace-diff.ts")).text()
+
+    expect(contextRail).toContain("onViewFileDiff(file.path)")
+    expect(app).toContain("window.easycode.workspaceDiff(filePath, workspaceRoot)")
+    expect(app).toContain("<WorkspaceDiffModal")
+    expect(diffModal).toContain('role="dialog"')
+    expect(diffModal).toContain('className="diff-preview"')
+    expect(main).toContain('desktopHandle("desktop:workspaceDiff"')
+    expect(workspaceDiff).toContain("workspaceDiffLimit = 200_000")
+    expect(workspaceDiff).toContain("File must be a relative path inside the workspace.")
+  })
 })

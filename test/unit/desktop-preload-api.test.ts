@@ -48,6 +48,7 @@ const expectedInvokeCalls = [
   { method: "showSidecar", args: [], channel: "desktop:showSidecar", ipcArgs: [] },
   { method: "sidecarStatus", args: [], channel: "desktop:sidecarStatus", ipcArgs: [] },
   { method: "workspaceStatus", args: [], channel: "desktop:workspaceStatus", ipcArgs: [] },
+  { method: "workspaceDiff", args: ["src/app.ts"], channel: "desktop:workspaceDiff", ipcArgs: ["src/app.ts"] },
   { method: "executeSlashCommand", args: ["/settings", 1, 2], channel: "sidecar:executeSlashCommand", ipcArgs: ["/settings", 1, 2] },
   { method: "runPrompt", args: ["build it", "plan", ["screen.png"], "ask", ["src/add.ts"]], channel: "sidecar:runPrompt", ipcArgs: ["build it", "plan", ["screen.png"], "ask", ["src/add.ts"]] },
   { method: "cancelRun", args: [], channel: "sidecar:cancelRun", ipcArgs: [] },
@@ -146,12 +147,14 @@ describe("desktop preload api", () => {
     await api.openWorkspaceFile("src/app.ts", "/repo/a")
     await api.openWorkspaceChanges("/repo/a")
     await api.workspaceStatus("/repo/a")
+    await api.workspaceDiff("src/app.ts", "/repo/a")
 
     expect(ipc.calls).toEqual([
       { channel: "sidecar:getProviderReadiness", args: ["/repo/a"] },
       { channel: "desktop:openWorkspaceFile", args: ["src/app.ts", "/repo/a"] },
       { channel: "desktop:openWorkspaceChanges", args: ["/repo/a"] },
       { channel: "desktop:workspaceStatus", args: ["/repo/a"] },
+      { channel: "desktop:workspaceDiff", args: ["src/app.ts", "/repo/a"] },
     ])
   })
 

@@ -31,6 +31,16 @@ const alignmentEvidence: CapabilityEvidence[] = [
     ],
   },
   {
+    capability: "workspace diff preview",
+    unit: [
+      { file: "test/unit/desktop-workspace-diff.test.ts", patterns: ["reads unstaged and staged changes", "renders bounded untracked text", "rejects paths that can escape"] },
+      { file: "test/unit/desktop-preload-api.test.ts", patterns: ["desktop:workspaceDiff"] },
+    ],
+    integration: [
+      { file: "test/integration/desktop-renderer-ui.test.ts", patterns: ["wires changed files to the bounded workspace diff modal"] },
+    ],
+  },
+  {
     capability: "slash command UI coverage",
     unit: [
       { file: "test/unit/slash.test.ts", patterns: ["parses prompt escape and common commands", "returns error for model and provider with no args"] },

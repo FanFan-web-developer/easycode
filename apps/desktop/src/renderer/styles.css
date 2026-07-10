@@ -2006,12 +2006,20 @@ pre {
   gap: 8px;
   align-items: center;
   min-height: 28px;
+  width: 100%;
   padding: 5px 7px;
   border: 1px solid #e3e9f2;
   border-radius: 7px;
   color: #66738a;
   background: rgba(255, 255, 255, 0.74);
   font-size: 12px;
+  text-align: left;
+}
+
+.git-change-row:hover,
+.git-change-row:focus-visible {
+  border-color: #c4d0e2;
+  background: #f7faff;
 }
 
 .git-change-row > span {
@@ -2468,6 +2476,107 @@ pre {
 .modal-actions .secondary {
   color: #4c5b75;
   background: #eef2f8;
+}
+
+.modal .diff-modal {
+  width: min(960px, 100%);
+  max-height: min(84vh, 760px);
+  overflow: hidden;
+}
+
+.diff-modal-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  min-width: 0;
+}
+
+.diff-modal-head > div {
+  display: grid;
+  gap: 3px;
+  min-width: 0;
+}
+
+.diff-modal-head p {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.diff-modal-close {
+  display: grid;
+  flex: 0 0 auto;
+  place-items: center;
+  width: 30px;
+  height: 30px;
+  padding: 0;
+  border-radius: 6px;
+  color: #738097;
+  background: #f1f4f9;
+  font-size: 20px;
+}
+
+.diff-preview {
+  min-height: 180px;
+  max-height: 56vh;
+  overflow: auto;
+  border: 1px solid #dfe6f1;
+  border-radius: 7px;
+  background: #f8fafc;
+  font-family: "SFMono-Regular", Consolas, monospace;
+  font-size: 11px;
+  line-height: 1.55;
+}
+
+.diff-preview code {
+  display: block;
+  width: max-content;
+  min-width: 100%;
+  padding: 8px 0;
+}
+
+.diff-line {
+  display: block;
+  min-height: 17px;
+  padding: 0 12px;
+  white-space: pre;
+}
+
+.diff-line.added {
+  color: #176b3a;
+  background: #eaf8ef;
+}
+
+.diff-line.deleted {
+  color: #a12d45;
+  background: #fff0f2;
+}
+
+.diff-line.hunk {
+  color: #3157d8;
+  background: #eef3ff;
+}
+
+.diff-line.header {
+  color: #6b4ca0;
+  font-weight: 650;
+}
+
+.diff-empty,
+.diff-notice {
+  padding: 12px;
+  border: 1px solid #e0e6f0;
+  border-radius: 7px;
+  color: #66738a;
+  background: #f7f9fd;
+  font-size: 13px;
+}
+
+.diff-notice {
+  border-color: #f0d7ad;
+  color: #9a5a09;
+  background: #fff8e8;
 }
 
 @media (max-width: 1120px) {

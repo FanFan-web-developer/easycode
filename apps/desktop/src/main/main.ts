@@ -10,6 +10,7 @@ import { withIpcErrorBoundary } from "./ipc-safe.js"
 import { SidecarBridge } from "./sidecar.js"
 import { WorkspaceSidecarRegistry } from "./sidecar-registry.js"
 import { resolveWorkspaceFilePath, workspacePathInfo } from "./workspace-path.js"
+import { readWorkspaceDiff } from "./workspace-diff.js"
 import { configureDesktopAppIdentity } from "./app-identity.js"
 import type { DesktopPermissionMode, DesktopProviderSetup, DesktopRunMode, DesktopSettings, DesktopWorkspaceChange } from "../shared/protocol.js"
 
@@ -206,6 +207,11 @@ desktopHandle("desktop:workspaceStatus", async (_event, workspaceRoot?: string) 
       error: error instanceof Error ? error.message : String(error),
     }
   }
+})
+
+desktopHandle("desktop:workspaceDiff", async (_event, filePath: string, workspaceRoot?: string) => {
+  const settings = await loadSettings()
+  return readWorkspaceDiff(workspaceRoot || settings.workspaceRoot, filePath)
 })
 
 app.whenReady().then(() => {

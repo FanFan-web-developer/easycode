@@ -8,6 +8,24 @@ Status: Draft
 - Active documentation priority: keep roadmap specs aligned with implemented modules instead of leaving implemented slices marked as drafts.
 - Current product priority after stabilization: desktop V1 readiness and release hygiene on top of the local sidecar boundary.
 
+## Step 73: Desktop Workspace Diff Preview
+
+- Scope: let desktop users inspect a changed file without leaving EasyCode while preserving the local main/preload/renderer security boundary.
+- Implementation:
+  - Added a bounded `desktop:workspaceDiff` IPC path with relative-path validation, external diff/textconv suppression, tracked/staged/deleted support, and safe untracked text generation.
+  - Added explicit binary, clean, truncated, file-existence, and error states with a 200,000-character output limit.
+  - Made context-rail change rows open a read-only syntax-colored diff modal with close and VS Code file-open actions.
+  - Added focused Git fixture, preload channel, renderer wiring, capability alignment, and responsive UI coverage.
+- Verification:
+  - `bun test test/unit/desktop-workspace-diff.test.ts test/unit/desktop-preload-api.test.ts test/unit/desktop-renderer-ui.test.ts test/unit/desktop-capability-alignment.test.ts test/integration/desktop-renderer-ui.test.ts --timeout 30000`: 27 pass, 0 fail.
+  - `bun run typecheck`: pass.
+  - Direct helper checks against the current worktree returned bounded real Git patches for both modified `App.tsx` and untracked `workspace-diff.ts`.
+  - `bun run desktop:build`: pass; sidecar compile, preload bundle, TypeScript, and Vite renderer build all completed.
+  - `bun run electron` launched the final desktop build without preload, IPC, module-resolution, or Electron runtime startup errors.
+  - Playwright opened the context rail, previewed tracked and untracked files, verified diff colors and close behavior, and confirmed the VS Code action received the selected relative path.
+  - At 920 x 700, `scrollWidth` matched `innerWidth`; the modal stayed inside `24..896` and the diff preview inside `45..875`.
+  - Final `bun run gate` passed local checks (`typecheck`, `tests`, `eval_fake`, `apix_subset`, `cache_benchmark`, and `build`); `provider_gate` failed only because the configured DeepSeek provider was unreachable, with `EC-REAL-001` and `EC-REAL-002` listed inline.
+
 ## Step 72: Desktop Run Queue Controls And Minimum-Width Layout
 
 - Scope: turn the existing background follow-up queue into a visible, controllable desktop workflow and verify it in a running GUI.

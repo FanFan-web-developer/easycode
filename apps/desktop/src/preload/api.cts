@@ -1,4 +1,4 @@
-import type { DesktopApi, DesktopDeleteSessionResult, DesktopFileSelection, DesktopGoalStatusResult, DesktopListSessionsResult, DesktopListSkillsResult, DesktopPermissionMode, DesktopPlanStatusResult, DesktopProviderListResult, DesktopProviderReadiness, DesktopProviderSetup, DesktopProviderSetupResult, DesktopRunMode, DesktopSettings, DesktopSettingsPatch, DesktopSidecarStatus, DesktopSlashCommandResult, DesktopWorkspaceStatus, SidecarFrame } from "../shared/protocol.js"
+import type { DesktopApi, DesktopDeleteSessionResult, DesktopFileSelection, DesktopGoalStatusResult, DesktopListSessionsResult, DesktopListSkillsResult, DesktopPermissionMode, DesktopPlanStatusResult, DesktopProviderListResult, DesktopProviderReadiness, DesktopProviderSetup, DesktopProviderSetupResult, DesktopRunMode, DesktopSettings, DesktopSettingsPatch, DesktopSidecarStatus, DesktopSlashCommandResult, DesktopWorkspaceDiff, DesktopWorkspaceStatus, SidecarFrame } from "../shared/protocol.js"
 
 export type DesktopIpcRenderer = {
   invoke(channel: string, ...args: unknown[]): Promise<unknown>
@@ -35,6 +35,7 @@ export function createDesktopApi(ipcRenderer: DesktopIpcRenderer): DesktopApi {
     showSidecar: () => invoke<{ opened: boolean }>("desktop:showSidecar"),
     sidecarStatus: () => invoke<DesktopSidecarStatus>("desktop:sidecarStatus"),
     workspaceStatus: (workspaceRoot?: string) => invoke<DesktopWorkspaceStatus>("desktop:workspaceStatus", ...optionalArg(workspaceRoot)),
+    workspaceDiff: (filePath: string, workspaceRoot?: string) => invoke<DesktopWorkspaceDiff>("desktop:workspaceDiff", filePath, ...optionalArg(workspaceRoot)),
     executeSlashCommand: (text: string, pendingImages?: number, pendingFiles?: number, workspaceRoot?: string) => invoke<DesktopSlashCommandResult>("sidecar:executeSlashCommand", text, pendingImages, pendingFiles, ...optionalArg(workspaceRoot)),
     runPrompt: (text: string, mode?: DesktopRunMode, images?: string[], permissionMode?: DesktopPermissionMode, files?: string[], workspaceRoot?: string) => invoke("sidecar:runPrompt", text, mode, images, permissionMode, files, ...optionalArg(workspaceRoot)),
     cancelRun: (workspaceRoot?: string) => invoke("sidecar:cancelRun", ...optionalArg(workspaceRoot)),

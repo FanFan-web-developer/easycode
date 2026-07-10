@@ -29,6 +29,7 @@ export type ContextRailCopy = {
   showLess: string
   skills: string
   thinking: string
+  viewFileDiff: (filePath: string) => string
   workingTree: string
   workspace: string
   languageName: (code: string) => string
@@ -43,6 +44,7 @@ export function ContextRail({
   onChangeThinking,
   onClearSkills,
   onToggleSkill,
+  onViewFileDiff,
   open,
   providerOptions,
   providerReadiness,
@@ -61,6 +63,7 @@ export function ContextRail({
   onChangeThinking: (thinking: boolean) => void
   onClearSkills: () => void
   onToggleSkill: (skill: DesktopSkillInfo) => void
+  onViewFileDiff: (filePath: string) => void
   open: boolean
   providerOptions: string[]
   providerReadiness?: DesktopProviderReadiness
@@ -80,7 +83,7 @@ export function ContextRail({
         <ToggleRow copy={copy} label={copy.thinking} value={settings?.thinking ?? true} onChange={onChangeThinking} />
         <SelectRow label={copy.language} value={settings?.language ?? "en"} options={languageSelectOptions(copy)} onChange={onChangeLanguage} />
       </Panel>
-      <GitChangesPanel copy={copy} status={status} />
+      <GitChangesPanel copy={copy} onViewFileDiff={onViewFileDiff} status={status} />
       <Panel title={copy.run}>
         <NumberRow label={copy.maxTokens} value={settings?.maxTokens} fallback={32000} onCommit={onChangeContextLimit} />
         <NumberRow label={copy.maxSteps} value={settings?.maxSteps} fallback={66} onCommit={onChangeMaxSteps} />
@@ -94,7 +97,7 @@ function Panel({ children, title }: { children: React.ReactNode; title: string }
   return <section className="rail-panel"><div className="panel-title"><h2>{title}</h2></div>{children}</section>
 }
 
-function GitChangesPanel({ copy, status }: { copy: ContextRailCopy; status?: DesktopWorkspaceStatus }) {
+function GitChangesPanel({ copy, onViewFileDiff, status }: { copy: ContextRailCopy; onViewFileDiff: (filePath: string) => void; status?: DesktopWorkspaceStatus }) {
   const files = status?.files ?? []
   return <Panel title={copy.changes}>
     <InfoRow label={copy.gitBranch} value={status?.branch ?? "unknown"} detail={aheadBehind(status)} />
@@ -106,11 +109,11 @@ function GitChangesPanel({ copy, status }: { copy: ContextRailCopy; status?: Des
     {status?.error && <div className="empty-list compact">{status.error}</div>}
     {!status?.error && files.length === 0 && <div className="empty-list compact">{status?.clean ? copy.clean : copy.noPathResolved}</div>}
     {files.length > 0 && <div className="git-change-list">
-      {files.map((file) => <div className="git-change-row" key={`${file.status}-${file.path}`}>
+      {files.map((file) => <button className="git-change-row" key={`${file.status}-${file.path}`} onClick={() => onViewFileDiff(file.path)} title={copy.viewFileDiff(file.path)} type="button">
         <span>{file.status}</span>
         <strong title={file.path}>{file.path}</strong>
         <small><b>+{file.added}</b><i>-{file.deleted}</i></small>
-      </div>)}
+      </button>)}
     </div>}
   </Panel>
 }
