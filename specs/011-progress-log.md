@@ -8,6 +8,19 @@ Status: Draft
 - Active documentation priority: keep roadmap specs aligned with implemented modules instead of leaving implemented slices marked as drafts.
 - Current product priority after stabilization: desktop V1 readiness and release hygiene on top of the local sidecar boundary.
 
+## Step 71: Provider Smoke Failure Details In Unified Gate Reports
+
+- Scope: make real-provider stabilization failures directly actionable from the canonical `bun run gate` Markdown report.
+- Implementation:
+  - Updated the unified quality-gate formatter to include failed provider smoke task ids and reasons under the `provider_gate` summary.
+  - Kept passing smoke tasks and non-provider checks concise, and normalized multiline failure reasons onto one Markdown line.
+  - Added focused unit coverage for task-level failure rendering and documented the report contract in `specs/006-evals.md`.
+- Verification:
+  - `bun test test/unit/quality-gate.test.ts --timeout 30000`: 7 pass, 0 fail.
+  - `bun run typecheck`: pass.
+  - `bun run gate` passed local checks (`typecheck`, `tests`, `eval_fake`, `apix_subset`, `cache_benchmark`, and `build`); `provider_gate` failed because the configured DeepSeek provider was unreachable, and the generated Markdown listed the failures for both `EC-REAL-001` and `EC-REAL-002` inline.
+- Notes: this improves evidence for stabilizing `EC-REAL-003`; it does not add that execution eval to the default provider smoke set.
+
 ## Step 70: Eval Tool Count Assertions
 
 - Scope: make symbol-aware edit evals prove repeated semantic verification instead of only requiring each tool name once.

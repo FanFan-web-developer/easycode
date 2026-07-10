@@ -6,7 +6,7 @@ import { easycodeDir } from "../../src/easycode-path"
 import { runEval } from "./eval"
 import { runAPIxEval } from "./apix"
 import { runCacheBenchmark } from "./cache-benchmark"
-import { runProviderGate } from "./provider-gate"
+import { runProviderGate, type ProviderGateReport } from "./provider-gate"
 import type { ProviderName } from "../../src/provider"
 
 type CheckStatus = "passed" | "failed" | "skipped"
@@ -274,8 +274,32 @@ export function formatQualityGateReport(report: QualityGateReport) {
   ]
   for (const check of report.checks) {
     lines.push(`- ${check.name}: ${check.status} - ${check.summary}`)
+    lines.push(...providerSmokeFailureLines(check))
   }
   return lines.join("\n").trimEnd()
+}
+
+function providerSmokeFailureLines(check: QualityGateCheck) {
+  if (check.name !== "provider_gate" || !isProviderGateReport(check.details)) return []
+
+  const lines: string[] = []
+  for (const provider of check.details.providers) {
+    const smokeCheck = provider.checks.find((item) => item.name === "smoke_eval" && item.status === "failed")
+    const results = (smokeCheck?.details as { results?: Array<{ id: string; status: CheckStatus; reason?: string }> } | undefined)?.results
+    const failures = results?.filter((result) => result.status === "failed") ?? []
+    if (failures.length === 0) continue
+
+    lines.push(`  - ${provider.provider} smoke_eval failures:`)
+    for (const failure of failures) {
+      const reason = failure.reason ? ` - ${failure.reason.replace(/\s+/g, " ").trim()}` : ""
+      lines.push(`    - ${failure.id}: ${failure.status}${reason}`)
+    }
+  }
+  return lines
+}
+
+function isProviderGateReport(value: unknown): value is ProviderGateReport {
+  return Boolean(value && typeof value === "object" && Array.isArray((value as { providers?: unknown }).providers))
 }
 
 export function parseArgs(argv: string[]): QualityGateOptions & { json?: boolean; insecure?: boolean } {

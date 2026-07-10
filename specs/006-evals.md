@@ -58,6 +58,7 @@ Tasks without `providers` are fake-provider deterministic evals. Real provider e
 - Configured providers run the real smoke eval set, a small deterministic APIx hard-gate subset, and the real cache benchmark unless disabled with `--no-apix` or `--no-cache`. The default smoke set includes both a no-tool response check and a symbol-aware semantic-planning check.
 - Execution-oriented real evals such as `EC-REAL-003` are available for explicit runs while provider connectivity and model stability are being proven; they should not join the default smoke set until they have passing provider evidence.
 - Each unified gate run writes machine-readable JSON and Markdown to `.easycode/reports/quality-gate` so local and provider readiness can be compared over time.
+- When a provider smoke eval fails, the unified gate Markdown includes each failed task id and its reason so provider instability can be diagnosed without opening the JSON report.
 - The process exits non-zero only when a configured provider check fails; an all-skipped run is allowed for local development without credentials.
 - The shared real-provider smoke eval tasks `EC-REAL-001` and `EC-REAL-002` must stay aligned with the same provider set so the default gate does not silently skip supported providers.
 

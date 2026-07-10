@@ -86,6 +86,54 @@ describe("quality gate", () => {
     expect(markdown).toContain("- typecheck: passed - passed in 1.0s")
   })
 
+  test("formats failed provider smoke task details", () => {
+    const markdown = formatQualityGateReport({
+      schemaVersion: 1,
+      runID: "test-run",
+      createdAt: "2026-06-02T00:00:00.000Z",
+      root: "/tmp/easycode",
+      status: "failed",
+      checks: [
+        {
+          name: "provider_gate",
+          status: "failed",
+          summary: "deepseek:failed",
+          details: {
+            schemaVersion: 1,
+            runID: "provider-test-run",
+            createdAt: "2026-06-02T00:00:00.000Z",
+            root: "/tmp/easycode",
+            status: "failed",
+            providers: [
+              {
+                provider: "deepseek",
+                status: "failed",
+                checks: [
+                  {
+                    name: "smoke_eval",
+                    status: "failed",
+                    summary: "0/2 smoke eval tasks passed",
+                    details: {
+                      results: [
+                        { id: "EC-REAL-001", status: "failed", reason: "run failed:\nprovider unreachable" },
+                        { id: "EC-REAL-002", status: "passed" },
+                      ],
+                    },
+                  },
+                ],
+              },
+            ],
+          },
+        },
+      ],
+    })
+
+    expect(markdown).toContain("- provider_gate: failed - deepseek:failed")
+    expect(markdown).toContain("  - deepseek smoke_eval failures:")
+    expect(markdown).toContain("    - EC-REAL-001: failed - run failed: provider unreachable")
+    expect(markdown).not.toContain("    - EC-REAL-002")
+  })
+
   test("can run the unified gate with fake provider checks only", async () => {
     const { report, paths } = await runQualityGate({
       root: path.resolve(import.meta.dir, "../.."),
