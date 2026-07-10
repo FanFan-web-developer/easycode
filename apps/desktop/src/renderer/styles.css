@@ -2517,6 +2517,40 @@ pre {
   font-size: 20px;
 }
 
+.diff-navigation {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 6px;
+  min-height: 30px;
+}
+
+.diff-navigation button {
+  display: grid;
+  place-items: center;
+  width: 30px;
+  height: 30px;
+  padding: 0;
+  border: 1px solid #dfe6f1;
+  border-radius: 6px;
+  color: #44516a;
+  background: #f7f9fd;
+  font-size: 16px;
+}
+
+.diff-navigation button:disabled {
+  color: #aeb7c6;
+  background: #f7f8fa;
+  cursor: default;
+}
+
+.diff-position {
+  min-width: 52px;
+  color: #66738a;
+  font-size: 12px;
+  text-align: center;
+}
+
 .diff-preview {
   min-height: 180px;
   max-height: 56vh;

@@ -8,6 +8,23 @@ Status: Draft
 - Active documentation priority: keep roadmap specs aligned with implemented modules instead of leaving implemented slices marked as drafts.
 - Current product priority after stabilization: desktop V1 readiness and release hygiene on top of the local sidecar boundary.
 
+## Step 74: Desktop Workspace Diff Navigation
+
+- Scope: review multiple changed files inside the existing diff modal without returning to the context rail after each file.
+- Implementation:
+  - Added deterministic previous/next navigation over the existing workspace-status file order, with localized position and accessible icon controls.
+  - Added `Alt+Left` and `Alt+Right` keyboard navigation while retaining disabled boundaries for the first and last files.
+  - Added request sequencing so rapid navigation, modal close, or workspace switching invalidates older in-flight diff results.
+  - Added focused navigation-state, renderer wiring, capability alignment, and responsive GUI coverage.
+- Verification:
+  - `bun test test/unit/desktop-workspace-diff-navigation.test.ts test/unit/desktop-workspace-diff.test.ts test/unit/desktop-preload-api.test.ts test/unit/desktop-renderer-ui.test.ts test/unit/desktop-capability-alignment.test.ts test/integration/desktop-renderer-ui.test.ts --timeout 30000`: 31 pass, 0 fail.
+  - `bun run typecheck`: pass.
+  - `bun run desktop:build`: pass; sidecar compile, preload bundle, TypeScript, and Vite renderer build all completed.
+  - `bun run electron` from `apps/desktop` launched the latest final desktop build without preload, IPC, module-resolution, or runtime startup errors.
+  - Playwright traversed `1 / 3` through `3 / 3`, verified `Alt+Left` returned to `2 / 3` without browser navigation, and confirmed a deliberately delayed second-file result could not overwrite the third file.
+  - Playwright also closed the modal during an in-flight request and confirmed it stayed closed. At 920 x 700, `scrollWidth` matched `innerWidth`; the modal stayed inside `24..896`, the diff preview inside `45..875`, and the next-file control inside `845..875`.
+  - Final `bun run gate` passed local checks (`typecheck`, full tests, 18/18 fake evals, 3/3 hard-gate APIx cases, cache benchmark, and build); `provider_gate` failed only because the configured DeepSeek URL was unreachable for `EC-REAL-001` and `EC-REAL-002`.
+
 ## Step 73: Desktop Workspace Diff Preview
 
 - Scope: let desktop users inspect a changed file without leaving EasyCode while preserving the local main/preload/renderer security boundary.

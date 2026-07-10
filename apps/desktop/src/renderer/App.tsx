@@ -19,6 +19,7 @@ import { applyDirectDesktopSettings, reconcileDesktopSettingsFromSidecar, restor
 import { WorkspaceSidebar } from "./workspace-sidebar.js"
 import { WorkspaceChangesBar } from "./workspace-status-bar.js"
 import { WorkspaceDiffModal, type WorkspaceDiffModalState } from "./workspace-diff-modal.js"
+import { workspaceDiffNavigation } from "./workspace-diff-navigation.js"
 
 export function App() {
   const [settings, setSettings] = useState<DesktopSettings>()
@@ -54,6 +55,7 @@ export function App() {
   const queuedInputsRef = useRef<QueuedRunInput[]>([])
   const activeRunWorkspaceRef = useRef<string | undefined>(undefined)
   const workspaceSwitchingRef = useRef(false)
+  const workspaceDiffRequestRef = useRef(0)
   const activePermissionRef = useRef<PermissionRunSnapshot>(permissionRunSnapshot(runMode, permissionMode))
 
   const currentWorkspaceRoot = () => settingsRef.current?.workspaceRoot
@@ -604,7 +606,7 @@ export function App() {
   const selectWorkspace = async (workspaceRoot: string) => {
     if (workspaceRoot === settings?.workspaceRoot) return
     workspaceSwitchingRef.current = true
-    setWorkspaceDiff(undefined)
+    closeWorkspaceDiff()
     try {
       const patch = workspaceSwitchPatch(workspaceRoot)
       if (shouldDetachActiveRunForWorkspaceSwitch(settings?.workspaceRoot, workspaceRoot, runningRef.current)) {
@@ -881,8 +883,10 @@ export function App() {
       />}
       {workspaceDiff && <WorkspaceDiffModal
         copy={copy}
+        navigation={workspaceDiffNavigation(workspaceStatus?.files ?? [], workspaceDiff.status === "ready" ? workspaceDiff.result.path : workspaceDiff.path)}
         state={workspaceDiff}
-        onClose={() => setWorkspaceDiff(undefined)}
+        onClose={closeWorkspaceDiff}
+        onNavigate={(filePath) => void openWorkspaceDiff(filePath)}
         onOpenFile={(filePath) => void openWorkspaceFileFromMessage(filePath)}
       />}
     </main>
@@ -928,15 +932,21 @@ export function App() {
   async function openWorkspaceDiff(filePath: string) {
     const workspaceRoot = settingsRef.current?.workspaceRoot
     if (!workspaceRoot) return
+    const requestId = ++workspaceDiffRequestRef.current
     setWorkspaceDiff({ status: "loading", path: filePath })
     try {
       const result = await window.easycode.workspaceDiff(filePath, workspaceRoot)
-      if (!isCurrentWorkspace(workspaceRoot)) return
+      if (requestId !== workspaceDiffRequestRef.current || !isCurrentWorkspace(workspaceRoot)) return
       setWorkspaceDiff({ status: "ready", result })
     } catch (error) {
-      if (!isCurrentWorkspace(workspaceRoot)) return
+      if (requestId !== workspaceDiffRequestRef.current || !isCurrentWorkspace(workspaceRoot)) return
       setWorkspaceDiff({ status: "error", path: filePath, message: errorMessage(error) })
     }
+  }
+
+  function closeWorkspaceDiff() {
+    workspaceDiffRequestRef.current += 1
+    setWorkspaceDiff(undefined)
   }
 
   function openWorkspaceChanges() {
