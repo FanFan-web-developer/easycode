@@ -202,6 +202,13 @@ export type DesktopWorkspaceDiff = {
 
 export type DesktopWorkspaceDiffScope = "all" | "staged" | "unstaged" | "untracked"
 
+export type DesktopWorkspaceGitAction = "stage" | "unstage"
+
+export type DesktopWorkspaceGitActionResult = {
+  action: DesktopWorkspaceGitAction
+  path: string
+}
+
 export type DesktopRunMode = "build" | "plan" | "goal"
 export type DesktopPermissionMode = "ask" | "auto-review"
 
@@ -261,6 +268,7 @@ export type DesktopApi = {
   sidecarStatus(): Promise<DesktopSidecarStatus>
   workspaceStatus(workspaceRoot?: string): Promise<DesktopWorkspaceStatus>
   workspaceDiff(filePath: string, workspaceRoot?: string, scope?: DesktopWorkspaceDiffScope): Promise<DesktopWorkspaceDiff>
+  workspaceGitAction(filePath: string, action: DesktopWorkspaceGitAction, workspaceRoot?: string): Promise<DesktopWorkspaceGitActionResult>
   executeSlashCommand(text: string, pendingImages?: number, pendingFiles?: number, workspaceRoot?: string): Promise<DesktopSlashCommandResult>
   runPrompt(text: string, mode?: DesktopRunMode, images?: string[], permissionMode?: DesktopPermissionMode, files?: string[], workspaceRoot?: string): Promise<any>
   cancelRun(workspaceRoot?: string): Promise<any>

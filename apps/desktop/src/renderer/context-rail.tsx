@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react"
-import type { DesktopSkillInfo, DesktopWorkspaceDiffScope, DesktopWorkspaceStatus } from "../shared/protocol.js"
+import type { DesktopSkillInfo, DesktopWorkspaceDiffScope, DesktopWorkspaceGitAction, DesktopWorkspaceStatus } from "../shared/protocol.js"
 import type { SelectOption } from "./app-types.js"
 import { providerReadinessDetail, providerReadinessLabel } from "./provider-readiness.js"
 import { languageSelectOptions, normalizeSelectOptions } from "./select-options.js"
@@ -31,9 +31,11 @@ export type ContextRailCopy = {
   showLess: string
   skills: string
   stagedChanges: string
+  stageFile: (filePath: string) => string
   thinking: string
   unstagedChanges: string
   untrackedFiles: string
+  unstageFile: (filePath: string) => string
   viewFileDiff: (filePath: string) => string
   workingTree: string
   workspace: string
@@ -49,6 +51,7 @@ export function ContextRail({
   onChangeThinking,
   onClearSkills,
   onRefreshWorkspaceStatus,
+  onRequestGitAction,
   onToggleSkill,
   onViewFileDiff,
   open,
@@ -70,6 +73,7 @@ export function ContextRail({
   onChangeThinking: (thinking: boolean) => void
   onClearSkills: () => void
   onRefreshWorkspaceStatus: () => void
+  onRequestGitAction: (filePath: string, action: DesktopWorkspaceGitAction) => void
   onToggleSkill: (skill: DesktopSkillInfo) => void
   onViewFileDiff: (filePath: string, scope: DesktopWorkspaceDiffScope) => void
   open: boolean
@@ -92,7 +96,7 @@ export function ContextRail({
         <ToggleRow copy={copy} label={copy.thinking} value={settings?.thinking ?? true} onChange={onChangeThinking} />
         <SelectRow label={copy.language} value={settings?.language ?? "en"} options={languageSelectOptions(copy)} onChange={onChangeLanguage} />
       </Panel>
-      <GitChangesPanel copy={copy} onRefresh={onRefreshWorkspaceStatus} onViewFileDiff={onViewFileDiff} refreshing={statusRefreshing} status={status} />
+      <GitChangesPanel copy={copy} onRefresh={onRefreshWorkspaceStatus} onRequestGitAction={onRequestGitAction} onViewFileDiff={onViewFileDiff} refreshing={statusRefreshing} running={running} status={status} />
       <Panel title={copy.run}>
         <NumberRow label={copy.maxTokens} value={settings?.maxTokens} fallback={32000} onCommit={onChangeContextLimit} />
         <NumberRow label={copy.maxSteps} value={settings?.maxSteps} fallback={66} onCommit={onChangeMaxSteps} />
@@ -106,7 +110,7 @@ function Panel({ action, children, title }: { action?: React.ReactNode; children
   return <section className="rail-panel"><div className="panel-title"><h2>{title}</h2>{action}</div>{children}</section>
 }
 
-function GitChangesPanel({ copy, onRefresh, onViewFileDiff, refreshing, status }: { copy: ContextRailCopy; onRefresh: () => void; onViewFileDiff: (filePath: string, scope: DesktopWorkspaceDiffScope) => void; refreshing: boolean; status?: DesktopWorkspaceStatus }) {
+function GitChangesPanel({ copy, onRefresh, onRequestGitAction, onViewFileDiff, refreshing, running, status }: { copy: ContextRailCopy; onRefresh: () => void; onRequestGitAction: (filePath: string, action: DesktopWorkspaceGitAction) => void; onViewFileDiff: (filePath: string, scope: DesktopWorkspaceDiffScope) => void; refreshing: boolean; running: boolean; status?: DesktopWorkspaceStatus }) {
   const files = status?.files ?? []
   const groups = workspaceChangeGroups(files)
   const refreshAction = <button className="panel-refresh-button" type="button" onClick={onRefresh} disabled={refreshing} aria-label={copy.refreshGitChanges} title={copy.refreshGitChanges}><span className={refreshing ? "spinning" : ""} aria-hidden="true">↻</span></button>
@@ -120,21 +124,25 @@ function GitChangesPanel({ copy, onRefresh, onViewFileDiff, refreshing, status }
     {status?.error && <div className="empty-list compact">{status.error}</div>}
     {!status?.error && files.length === 0 && <div className="empty-list compact">{status?.clean ? copy.clean : copy.noPathResolved}</div>}
     {groups.length > 0 && <div className="git-change-groups">
-      {groups.map((group) => <GitChangeGroup copy={copy} group={group} key={group.scope} onViewFileDiff={onViewFileDiff} />)}
+      {groups.map((group) => <GitChangeGroup copy={copy} disabled={running || refreshing} group={group} key={group.scope} onRequestGitAction={onRequestGitAction} onViewFileDiff={onViewFileDiff} />)}
     </div>}
   </Panel>
 }
 
-function GitChangeGroup({ copy, group, onViewFileDiff }: { copy: ContextRailCopy; group: WorkspaceChangeGroup; onViewFileDiff: (filePath: string, scope: DesktopWorkspaceDiffScope) => void }) {
+function GitChangeGroup({ copy, disabled, group, onRequestGitAction, onViewFileDiff }: { copy: ContextRailCopy; disabled: boolean; group: WorkspaceChangeGroup; onRequestGitAction: (filePath: string, action: DesktopWorkspaceGitAction) => void; onViewFileDiff: (filePath: string, scope: DesktopWorkspaceDiffScope) => void }) {
   const title = group.scope === "staged" ? copy.stagedChanges : group.scope === "unstaged" ? copy.unstagedChanges : copy.untrackedFiles
+  const action: DesktopWorkspaceGitAction = group.scope === "staged" ? "unstage" : "stage"
   return <section className="git-change-group" aria-label={title}>
     <div className="git-change-group-title"><span>{title}</span><small>{group.rows.length}</small></div>
     <div className="git-change-list">
-      {group.rows.map((file) => <button className="git-change-row" key={`${group.scope}-${file.path}`} onClick={() => onViewFileDiff(file.path, group.scope)} title={copy.viewFileDiff(file.path)} type="button">
-        <span>{file.status}</span>
-        <strong title={file.path}>{file.path}</strong>
-        <small><b>+{file.added}</b><i>-{file.deleted}</i></small>
-      </button>)}
+      {group.rows.map((file) => <div className="git-change-row" key={`${group.scope}-${file.path}`}>
+        <button className="git-change-open" onClick={() => onViewFileDiff(file.path, group.scope)} title={copy.viewFileDiff(file.path)} type="button">
+          <span>{file.status}</span>
+          <strong title={file.path}>{file.path}</strong>
+          <small><b>+{file.added}</b><i>-{file.deleted}</i></small>
+        </button>
+        <button className="git-change-action" type="button" disabled={disabled} onClick={() => onRequestGitAction(file.path, action)} aria-label={action === "stage" ? copy.stageFile(file.path) : copy.unstageFile(file.path)} title={action === "stage" ? copy.stageFile(file.path) : copy.unstageFile(file.path)}>{action === "stage" ? "+" : "−"}</button>
+      </div>)}
     </div>
   </section>
 }

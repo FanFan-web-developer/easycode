@@ -90,6 +90,7 @@ describe("desktop renderer UI integration", () => {
     const diffNavigation = await Bun.file(path.join(repoRoot, "apps/desktop/src/renderer/workspace-diff-navigation.ts")).text()
     const main = await Bun.file(path.join(repoRoot, "apps/desktop/src/main/main.ts")).text()
     const workspaceDiff = await Bun.file(path.join(repoRoot, "apps/desktop/src/main/workspace-diff.ts")).text()
+    const workspacePath = await Bun.file(path.join(repoRoot, "apps/desktop/src/main/workspace-path.ts")).text()
     const workspaceStatus = await Bun.file(path.join(repoRoot, "apps/desktop/src/main/workspace-status.ts")).text()
     const changeGroups = await Bun.file(path.join(repoRoot, "apps/desktop/src/renderer/workspace-change-groups.ts")).text()
 
@@ -109,7 +110,7 @@ describe("desktop renderer UI integration", () => {
     expect(workspaceDiff).toContain('scope === "unstaged"')
     expect(workspaceStatus).toContain("const stagedStats = parseGitNumstat(stagedNumstat)")
     expect(changeGroups).toContain('scope: "untracked"')
-    expect(workspaceDiff).toContain("File must be a relative path inside the workspace.")
+    expect(workspacePath).toContain("File must be a relative path inside the workspace.")
   })
 
   test("refreshes workspace status and the active diff through existing desktop APIs", async () => {
@@ -126,5 +127,24 @@ describe("desktop renderer UI integration", () => {
     expect(diffModal).toContain("onClick={() => onRefresh(path, scope)}")
     expect(preload).toContain('workspaceStatus: (workspaceRoot?: string) => invoke<DesktopWorkspaceStatus>("desktop:workspaceStatus", ...optionalArg(workspaceRoot))')
     expect(preload).toContain('workspaceDiff: (filePath: string, workspaceRoot?: string, scope?: DesktopWorkspaceDiffScope) => invoke<DesktopWorkspaceDiff>("desktop:workspaceDiff", filePath, ...workspaceDiffArgs(workspaceRoot, scope))')
+  })
+
+  test("confirms single-file Git index actions through the typed desktop boundary", async () => {
+    const app = await Bun.file(path.join(repoRoot, "apps/desktop/src/renderer/App.tsx")).text()
+    const contextRail = await Bun.file(path.join(repoRoot, "apps/desktop/src/renderer/context-rail.tsx")).text()
+    const actionModal = await Bun.file(path.join(repoRoot, "apps/desktop/src/renderer/workspace-git-action-modal.tsx")).text()
+    const preload = await Bun.file(path.join(repoRoot, "apps/desktop/src/preload/api.cts")).text()
+    const main = await Bun.file(path.join(repoRoot, "apps/desktop/src/main/main.ts")).text()
+    const gitAction = await Bun.file(path.join(repoRoot, "apps/desktop/src/main/workspace-git-action.ts")).text()
+
+    expect(contextRail).toContain('className="git-change-action"')
+    expect(contextRail).toContain("onRequestGitAction(file.path, action)")
+    expect(app).toContain("<WorkspaceGitActionModal")
+    expect(app).toContain("window.easycode.workspaceGitAction(request.path, request.action, request.workspaceRoot)")
+    expect(actionModal).toContain('role="dialog"')
+    expect(actionModal).toContain("await onConfirm()")
+    expect(preload).toContain('workspaceGitAction: (filePath: string, action: DesktopWorkspaceGitAction, workspaceRoot?: string)')
+    expect(main).toContain('desktopHandle("desktop:workspaceGitAction"')
+    expect(gitAction).toContain('action === "stage" ? ["--literal-pathspecs", "add", "--", target.relativePath] : ["--literal-pathspecs", "reset", "--", target.relativePath]')
   })
 })

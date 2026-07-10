@@ -369,6 +369,29 @@ describe("desktop renderer UI contracts", () => {
     expect(css).toContain(".diff-navigation .diff-refresh")
   })
 
+  test("requires confirmation before single-file Git index actions", async () => {
+    const source = await rendererFile("App.tsx")
+    const contextRail = await rendererFile("context-rail.tsx")
+    const modal = await rendererFile("workspace-git-action-modal.tsx")
+    const copy = await rendererFile("desktop-copy.ts")
+    const css = await rendererFile("styles.css")
+
+    expect(source).toContain("const [workspaceGitAction, setWorkspaceGitAction]")
+    expect(source).toContain("requestWorkspaceGitAction")
+    expect(source).toContain("applyWorkspaceGitAction")
+    expect(source).toContain("window.easycode.workspaceGitAction(request.path, request.action, request.workspaceRoot)")
+    expect(contextRail).toContain('className="git-change-open"')
+    expect(contextRail).toContain('className="git-change-action"')
+    expect(contextRail).toContain('group.scope === "staged" ? "unstage" : "stage"')
+    expect(contextRail).toContain("disabled={disabled}")
+    expect(modal).toContain('className="workspace-git-action-modal"')
+    expect(modal).toContain("await onConfirm()")
+    expect(modal).toContain("setSubmitting(true)")
+    expect(copy).toContain("workspaceGitActionDetail")
+    expect(css).toContain(".workspace-git-action-modal")
+    expect(css).toContain(".git-change-action:hover:not(:disabled)")
+  })
+
   test("binds draft session materialization and sidecar requests to the selected workspace", async () => {
     const source = await rendererFile("App.tsx")
     const main = await Bun.file(path.join(import.meta.dir, "../../apps/desktop/src/main/main.ts")).text()

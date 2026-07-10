@@ -2054,32 +2054,43 @@ pre {
 
 .git-change-row {
   display: grid;
-  grid-template-columns: 34px minmax(0, 1fr) auto;
-  gap: 8px;
+  grid-template-columns: minmax(0, 1fr) 26px;
+  gap: 4px;
   align-items: center;
   min-height: 28px;
   width: 100%;
-  padding: 5px 7px;
+  padding: 3px 4px 3px 7px;
   border: 1px solid #e3e9f2;
   border-radius: 7px;
   color: #66738a;
   background: rgba(255, 255, 255, 0.74);
   font-size: 12px;
-  text-align: left;
 }
 
 .git-change-row:hover,
-.git-change-row:focus-visible {
+.git-change-row:focus-within {
   border-color: #c4d0e2;
   background: #f7faff;
 }
 
-.git-change-row > span {
+.git-change-open {
+  display: grid;
+  grid-template-columns: 34px minmax(0, 1fr) auto;
+  gap: 8px;
+  align-items: center;
+  min-width: 0;
+  padding: 2px 0;
+  color: inherit;
+  background: transparent;
+  text-align: left;
+}
+
+.git-change-open > span {
   color: #8b96aa;
   font-family: "SFMono-Regular", Consolas, monospace;
 }
 
-.git-change-row strong {
+.git-change-open strong {
   min-width: 0;
   overflow: hidden;
   color: #40506a;
@@ -2088,9 +2099,44 @@ pre {
   white-space: nowrap;
 }
 
-.git-change-row small {
+.git-change-open small {
   display: inline-flex;
   gap: 5px;
+  white-space: nowrap;
+}
+
+.git-change-action {
+  display: grid;
+  place-items: center;
+  width: 26px;
+  height: 26px;
+  padding: 0;
+  border-radius: 5px;
+  color: #66738a;
+  background: transparent;
+  font-size: 16px;
+}
+
+.git-change-action:hover:not(:disabled),
+.git-change-action:focus-visible {
+  color: #3157d8;
+  background: #e9efff;
+}
+
+.modal .workspace-git-action-modal {
+  width: min(520px, 100%);
+}
+
+.workspace-git-action-path {
+  overflow: hidden;
+  padding: 10px 12px;
+  border: 1px solid #dfe6f1;
+  border-radius: 7px;
+  color: #40506a;
+  background: #f7f9fd;
+  font-family: "SFMono-Regular", Consolas, monospace;
+  font-size: 12px;
+  text-overflow: ellipsis;
   white-space: nowrap;
 }
 

@@ -49,6 +49,7 @@ const expectedInvokeCalls = [
   { method: "sidecarStatus", args: [], channel: "desktop:sidecarStatus", ipcArgs: [] },
   { method: "workspaceStatus", args: [], channel: "desktop:workspaceStatus", ipcArgs: [] },
   { method: "workspaceDiff", args: ["src/app.ts"], channel: "desktop:workspaceDiff", ipcArgs: ["src/app.ts"] },
+  { method: "workspaceGitAction", args: ["src/app.ts", "stage"], channel: "desktop:workspaceGitAction", ipcArgs: ["src/app.ts", "stage"] },
   { method: "executeSlashCommand", args: ["/settings", 1, 2], channel: "sidecar:executeSlashCommand", ipcArgs: ["/settings", 1, 2] },
   { method: "runPrompt", args: ["build it", "plan", ["screen.png"], "ask", ["src/add.ts"]], channel: "sidecar:runPrompt", ipcArgs: ["build it", "plan", ["screen.png"], "ask", ["src/add.ts"]] },
   { method: "cancelRun", args: [], channel: "sidecar:cancelRun", ipcArgs: [] },
@@ -148,6 +149,7 @@ describe("desktop preload api", () => {
     await api.openWorkspaceChanges("/repo/a")
     await api.workspaceStatus("/repo/a")
     await api.workspaceDiff("src/app.ts", "/repo/a", "staged")
+    await api.workspaceGitAction("src/app.ts", "unstage", "/repo/a")
 
     expect(ipc.calls).toEqual([
       { channel: "sidecar:getProviderReadiness", args: ["/repo/a"] },
@@ -155,6 +157,7 @@ describe("desktop preload api", () => {
       { channel: "desktop:openWorkspaceChanges", args: ["/repo/a"] },
       { channel: "desktop:workspaceStatus", args: ["/repo/a"] },
       { channel: "desktop:workspaceDiff", args: ["src/app.ts", "/repo/a", "staged"] },
+      { channel: "desktop:workspaceGitAction", args: ["src/app.ts", "unstage", "/repo/a"] },
     ])
   })
 

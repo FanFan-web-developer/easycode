@@ -45,6 +45,17 @@ const alignmentEvidence: CapabilityEvidence[] = [
     ],
   },
   {
+    capability: "workspace Git index actions",
+    unit: [
+      { file: "test/unit/desktop-workspace-git-action.test.ts", patterns: ["stages and unstages one file without changing working-tree content", "stages and unstages a deletion", "rejects paths outside the workspace"] },
+      { file: "test/unit/desktop-preload-api.test.ts", patterns: ["desktop:workspaceGitAction"] },
+      { file: "test/unit/desktop-renderer-ui.test.ts", patterns: ["requires confirmation before single-file Git index actions"] },
+    ],
+    integration: [
+      { file: "test/integration/desktop-renderer-ui.test.ts", patterns: ["confirms single-file Git index actions through the typed desktop boundary"] },
+    ],
+  },
+  {
     capability: "slash command UI coverage",
     unit: [
       { file: "test/unit/slash.test.ts", patterns: ["parses prompt escape and common commands", "returns error for model and provider with no args"] },

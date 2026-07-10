@@ -12,8 +12,9 @@ import { WorkspaceSidecarRegistry } from "./sidecar-registry.js"
 import { resolveWorkspaceFilePath, workspacePathInfo } from "./workspace-path.js"
 import { readWorkspaceDiff } from "./workspace-diff.js"
 import { parseGitStatus } from "./workspace-status.js"
+import { runWorkspaceGitAction } from "./workspace-git-action.js"
 import { configureDesktopAppIdentity } from "./app-identity.js"
-import type { DesktopPermissionMode, DesktopProviderSetup, DesktopRunMode, DesktopSettings, DesktopWorkspaceDiffScope } from "../shared/protocol.js"
+import type { DesktopPermissionMode, DesktopProviderSetup, DesktopRunMode, DesktopSettings, DesktopWorkspaceDiffScope, DesktopWorkspaceGitAction } from "../shared/protocol.js"
 
 const currentDir = path.dirname(fileURLToPath(import.meta.url))
 const execFileAsync = promisify(execFile)
@@ -213,6 +214,11 @@ desktopHandle("desktop:workspaceStatus", async (_event, workspaceRoot?: string) 
 desktopHandle("desktop:workspaceDiff", async (_event, filePath: string, workspaceRoot?: string, scope?: DesktopWorkspaceDiffScope) => {
   const settings = await loadSettings()
   return readWorkspaceDiff(workspaceRoot || settings.workspaceRoot, filePath, scope)
+})
+
+desktopHandle("desktop:workspaceGitAction", async (_event, filePath: string, action: DesktopWorkspaceGitAction, workspaceRoot?: string) => {
+  const settings = await loadSettings()
+  return runWorkspaceGitAction(workspaceRoot || settings.workspaceRoot, filePath, action)
 })
 
 app.whenReady().then(() => {

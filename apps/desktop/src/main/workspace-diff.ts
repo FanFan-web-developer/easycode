@@ -1,8 +1,8 @@
 import { execFile } from "node:child_process"
 import { lstat, open } from "node:fs/promises"
-import path from "node:path"
 import { promisify } from "node:util"
 import type { DesktopWorkspaceDiff, DesktopWorkspaceDiffScope } from "../shared/protocol.js"
+import { resolveWorkspaceRelativePath } from "./workspace-path.js"
 
 const execFileAsync = promisify(execFile)
 export const workspaceDiffLimit = 200_000
@@ -10,7 +10,7 @@ const gitOutputLimit = 1_000_000
 
 export async function readWorkspaceDiff(workspaceRoot: string, requestedPath: string, scope: DesktopWorkspaceDiffScope = "all"): Promise<DesktopWorkspaceDiff> {
   if (!workspaceDiffScopes.includes(scope)) throw new Error(`Unsupported workspace diff scope: ${String(scope)}`)
-  const target = resolveDiffTarget(workspaceRoot, requestedPath)
+  const target = resolveWorkspaceRelativePath(workspaceRoot, requestedPath)
   const exists = await isRegularFile(target.absolutePath)
   if (scope === "untracked") return readUntrackedScope(target.root, target.absolutePath, target.relativePath, exists, scope)
 
@@ -100,30 +100,12 @@ async function readUntrackedDiff(absolutePath: string, relativePath: string, sco
 }
 
 async function runGit(root: string, args: string[]) {
-  const { stdout } = await execFileAsync("git", args, {
+  const { stdout } = await execFileAsync("git", ["--literal-pathspecs", ...args], {
     cwd: root,
     encoding: "utf8",
     maxBuffer: gitOutputLimit,
   })
   return String(stdout)
-}
-
-function resolveDiffTarget(workspaceRoot: string, requestedPath: string) {
-  const cleanPath = requestedPath.trim().replace(/^["']|["']$/g, "")
-  if (!cleanPath || path.isAbsolute(cleanPath) || cleanPath.includes("\0") || cleanPath.split(/[\\/]/).some((part) => part === "..")) {
-    throw new Error("File must be a relative path inside the workspace.")
-  }
-  const root = path.resolve(workspaceRoot)
-  const absolutePath = path.resolve(root, cleanPath)
-  const relativePath = path.relative(root, absolutePath)
-  if (!relativePath || relativePath.startsWith("..") || path.isAbsolute(relativePath)) {
-    throw new Error("File must be a relative path inside the workspace.")
-  }
-  return {
-    root,
-    absolutePath,
-    relativePath: relativePath.split(path.sep).join("/"),
-  }
 }
 
 async function isRegularFile(filePath: string) {

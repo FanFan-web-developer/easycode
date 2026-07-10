@@ -47,6 +47,13 @@ Supported v1 methods: `initialize`, `listSessions`, `loadSession`, `deleteSessio
 - Git status preserves separate index and working-tree codes plus scoped line counts. The Changes panel renders Staged Changes, Unstaged Changes, and Untracked Files groups; a file changed in both index and worktree appears in both groups with the corresponding stats.
 - The existing workspace-diff IPC accepts a read-only scope. Staged rows read cached diffs, unstaged rows read index-to-worktree diffs, and untracked rows use the bounded local text preview. Navigation and refresh retain the selected scope.
 
+## Workspace Git Index Actions
+
+- Staged rows expose a single-file unstage action; unstaged and untracked rows expose a single-file stage action. The row action is separate from the diff-open control.
+- Every action requires an in-app confirmation that names the target path and states that working-tree file content is not changed.
+- Confirmed actions run in the Electron main process through the typed `desktop:workspaceGitAction` IPC path. Stage uses `git --literal-pathspecs add -- <path>` and unstage uses `git --literal-pathspecs reset -- <path>`; requested paths and action names fail closed before execution.
+- Actions are disabled while an agent run or workspace-status refresh is active. Success refreshes authoritative Git status so the file moves to its new group; cancellation performs no IPC call.
+
 ## Desktop Boundary
 
 The Electron app lives under `apps/desktop`. It prefers a bundled platform sidecar from packaged resources, then a user-configured sidecar path, then `easycode` on `PATH`. Renderer code only calls the preload API; all sidecar spawning and filesystem settings are handled in the Electron main process.
@@ -67,7 +74,7 @@ The Electron app lives under `apps/desktop`. It prefers a bundled platform sidec
 - The desktop app continues to treat the CLI/runtime as a sidecar boundary, not as renderer-imported runtime internals.
 - Session, settings, provider readiness, plan approval, permission replies, prompt runs, cancellation, and shutdown remain covered by sidecar integration or desktop unit tests.
 - Active-run queue visibility, single-item removal, clear-all behavior, and minimum-width layout remain covered by renderer tests plus a running GUI interaction check.
-- Workspace diff path validation, staged/unstaged/untracked separation, binary/deleted behavior, IPC alignment, modal rendering, scoped navigation, manual refresh, stale-request rejection, file opening, and minimum-width layout remain covered by focused tests and a running GUI interaction check.
+- Workspace diff path validation, staged/unstaged/untracked separation, binary/deleted behavior, IPC alignment, modal rendering, scoped navigation, manual refresh, stale-request rejection, single-file index actions, confirmation/cancellation, file opening, and minimum-width layout remain covered by focused tests and a running GUI interaction check.
 - Packaged builds must include a platform sidecar and keep `apps/desktop/.npmrc` on the official npm registry.
 - Release candidates should pass `bun run desktop:build` plus the root quality gate; real-provider failures should be reported separately from local build/test regressions.
 - Cross-platform release validation should cover macOS arm64, Linux x64, and Windows x64 artifacts from `.github/workflows/desktop-release.yml`.

@@ -13,6 +13,20 @@ export function workspacePathInfo(workspaceRoot: string, filePath: string) {
   }
 }
 
+export function resolveWorkspaceRelativePath(workspaceRoot: string, requestedPath: string) {
+  const cleanPath = requestedPath.trim().replace(/^["']|["']$/g, "")
+  if (!cleanPath || path.isAbsolute(cleanPath) || cleanPath.includes("\0") || cleanPath.split(/[\\/]/).some((part) => part === "..")) {
+    throw new Error("File must be a relative path inside the workspace.")
+  }
+  const root = path.resolve(workspaceRoot)
+  const absolutePath = path.resolve(root, cleanPath)
+  const relativePath = path.relative(root, absolutePath)
+  if (!relativePath || relativePath.startsWith("..") || path.isAbsolute(relativePath)) {
+    throw new Error("File must be a relative path inside the workspace.")
+  }
+  return { root, absolutePath, relativePath: relativePath.split(path.sep).join("/") }
+}
+
 export async function resolveWorkspaceFilePath(workspaceRoot: string, requestedPath: string) {
   const cleanPath = requestedPath.trim().replace(/^["']|["']$/g, "")
   if (!cleanPath || path.isAbsolute(cleanPath) || cleanPath.includes("\0") || cleanPath.split(/[\\/]/).some((part) => part === "..")) {

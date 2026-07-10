@@ -1,5 +1,5 @@
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react"
-import type { DesktopDeleteSessionResult, DesktopFileSelection, DesktopGoalState, DesktopGoalStatusResult, DesktopListSessionsResult, DesktopListSkillsResult, DesktopLoadSessionResult, DesktopPermissionMode, DesktopPlanStatusResult, DesktopProviderListResult, DesktopProviderReadiness, DesktopProviderSetup, DesktopProviderSetupResult, DesktopRunMode, DesktopSessionSummary, DesktopSettings, DesktopSkillInfo, DesktopSlashCommandResult, DesktopWorkspaceDiffScope, DesktopWorkspaceStatus, SidecarFrame } from "../shared/protocol.js"
+import type { DesktopDeleteSessionResult, DesktopFileSelection, DesktopGoalState, DesktopGoalStatusResult, DesktopListSessionsResult, DesktopListSkillsResult, DesktopLoadSessionResult, DesktopPermissionMode, DesktopPlanStatusResult, DesktopProviderListResult, DesktopProviderReadiness, DesktopProviderSetup, DesktopProviderSetupResult, DesktopRunMode, DesktopSessionSummary, DesktopSettings, DesktopSkillInfo, DesktopSlashCommandResult, DesktopWorkspaceDiffScope, DesktopWorkspaceGitAction, DesktopWorkspaceStatus, SidecarFrame } from "../shared/protocol.js"
 import { applyAttachmentAction, clearAttachmentSlashCommands, pickedFileSlashCommands, rejectedWorkspaceFileSummary, removeFileRefs, type AttachmentAction, type DesktopAttachment } from "./attachment-state.js"
 import type { Attachment, ChatItem, PermissionMode, PermissionPrompt, PlanPrompt, Progress, RunMode } from "./app-types.js"
 import { Composer } from "./composer.js"
@@ -21,6 +21,7 @@ import { WorkspaceChangesBar } from "./workspace-status-bar.js"
 import { workspaceChangePaths } from "./workspace-change-groups.js"
 import { WorkspaceDiffModal, type WorkspaceDiffModalState } from "./workspace-diff-modal.js"
 import { workspaceDiffNavigation } from "./workspace-diff-navigation.js"
+import { WorkspaceGitActionModal } from "./workspace-git-action-modal.js"
 
 export function App() {
   const [settings, setSettings] = useState<DesktopSettings>()
@@ -45,6 +46,7 @@ export function App() {
   const [workspaceStatus, setWorkspaceStatus] = useState<DesktopWorkspaceStatus>()
   const [workspaceStatusRefreshing, setWorkspaceStatusRefreshing] = useState(false)
   const [workspaceDiff, setWorkspaceDiff] = useState<WorkspaceDiffModalState>()
+  const [workspaceGitAction, setWorkspaceGitAction] = useState<{ action: DesktopWorkspaceGitAction; path: string; workspaceRoot: string }>()
   const [providerOptions, setProviderOptions] = useState<string[]>([])
   const [providerReadiness, setProviderReadiness] = useState<DesktopProviderReadiness>()
   const [progress, setProgress] = useState<Progress>({ status: "idle", summary: "Ready for a local run.", toolCalls: 0, toolResults: 0 })
@@ -618,6 +620,7 @@ export function App() {
     if (workspaceRoot === settings?.workspaceRoot) return
     workspaceSwitchingRef.current = true
     closeWorkspaceDiff()
+    setWorkspaceGitAction(undefined)
     try {
       const patch = workspaceSwitchPatch(workspaceRoot)
       if (shouldDetachActiveRunForWorkspaceSwitch(settings?.workspaceRoot, workspaceRoot, runningRef.current)) {
@@ -871,6 +874,7 @@ export function App() {
         onChangeThinking={(thinking) => applySettingsCommand(thinkingSettingsCommand(thinking))}
         onClearSkills={clearSkills}
         onRefreshWorkspaceStatus={() => void refreshWorkspaceStatus().catch((error) => reportUiError(error, "Workspace status refresh failed."))}
+        onRequestGitAction={requestWorkspaceGitAction}
         onToggleSkill={toggleSkill}
         onViewFileDiff={(filePath, scope) => void openWorkspaceDiff(filePath, scope)}
         open={contextRailOpen}
@@ -887,6 +891,14 @@ export function App() {
 
       {permission && <PermissionModal prompt={permission} onClose={() => setPermission(undefined)} onError={reportUiError} />}
       {plan && <PlanModal prompt={plan} onClose={() => setPlan(undefined)} onError={reportUiError} />}
+      {workspaceGitAction && <WorkspaceGitActionModal
+        action={workspaceGitAction.action}
+        copy={copy}
+        path={workspaceGitAction.path}
+        onClose={() => setWorkspaceGitAction(undefined)}
+        onConfirm={() => applyWorkspaceGitAction(workspaceGitAction)}
+        onError={reportUiError}
+      />}
       {providerSetupVisible && settings && providerReadiness && <ProviderSetupModal
         providerOptions={providerOptions}
         readiness={providerReadiness}
@@ -962,6 +974,20 @@ export function App() {
     const statusRefresh = refreshWorkspaceStatus().catch((error) => reportUiError(error, "Workspace status refresh failed."))
     await openWorkspaceDiff(filePath, scope)
     await statusRefresh
+  }
+
+  function requestWorkspaceGitAction(filePath: string, action: DesktopWorkspaceGitAction) {
+    const workspaceRoot = settingsRef.current?.workspaceRoot
+    if (!workspaceRoot) return
+    setWorkspaceGitAction({ action, path: filePath, workspaceRoot })
+  }
+
+  async function applyWorkspaceGitAction(request: { action: DesktopWorkspaceGitAction; path: string; workspaceRoot: string }) {
+    const result = await window.easycode.workspaceGitAction(request.path, request.action, request.workspaceRoot)
+    if (isCurrentWorkspace(request.workspaceRoot)) {
+      await refreshWorkspaceStatus().catch((error) => reportUiError(error, "Workspace status refresh failed."))
+    }
+    updateProgress({ ...progressRef.current, status: "idle", summary: copy.workspaceGitActionDone(result.action, result.path) })
   }
 
   function closeWorkspaceDiff() {

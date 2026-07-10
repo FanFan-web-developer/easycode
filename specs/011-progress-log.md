@@ -8,6 +8,27 @@ Status: Draft
 - Active documentation priority: keep roadmap specs aligned with implemented modules instead of leaving implemented slices marked as drafts.
 - Current product priority after stabilization: desktop V1 readiness and release hygiene on top of the local sidecar boundary.
 
+## Step 77: Desktop Confirmed Git Index Actions
+
+- Scope: let desktop users stage or unstage one reviewed file while keeping repository writes explicit, bounded, and separate from diff opening.
+- Implementation:
+  - Added a typed `desktop:workspaceGitAction` main/preload boundary with runtime action validation and shared workspace-relative path validation.
+  - Implemented single-file stage and unstage with Git literal-pathspec mode so pathspec magic cannot expand the target; neither command changes working-tree file content.
+  - Split each Git row into an accessible diff-open control and a compact stage/unstage icon action, disabled during agent runs and status refreshes.
+  - Added a localized confirmation modal with exact target path, index-only consequence text, cancellation, submitting, and error states.
+  - Refreshes authoritative workspace status after success so files move between groups, and records the result in run progress without adding timeline noise.
+  - Added real Git fixture, deleted-file, path/action rejection, preload, renderer, integration, capability-alignment, responsive UI, and running GUI coverage.
+- Verification:
+  - `bun test test/unit/desktop-workspace-status.test.ts test/unit/desktop-workspace-change-groups.test.ts test/unit/desktop-workspace-diff.test.ts test/unit/desktop-workspace-git-action.test.ts test/unit/desktop-preload-api.test.ts test/unit/desktop-renderer-ui.test.ts test/unit/desktop-capability-alignment.test.ts test/integration/desktop-renderer-ui.test.ts --timeout 30000`: 40 pass, 0 fail.
+  - `bun run typecheck`: pass.
+  - Real Git fixtures staged and unstaged modified and deleted files without changing working-tree content, and rejected escaping paths and unsupported actions.
+  - `bun run desktop:build`: pass; sidecar compile, preload bundle, TypeScript, and Vite renderer build all completed.
+  - `bun run electron` from `apps/desktop` launched the latest final desktop build without preload, IPC, module-resolution, or runtime startup errors.
+  - Playwright verified cancel made no IPC call, confirm exposed a submitting state, stage moved `notes/draft.md` from Untracked to Staged, and unstage moved it back.
+  - The two captured calls contained only the exact path, action, and workspace root; row action clicks produced no diff call, and the final success path added no timeline message noise.
+  - At 920 x 700, `scrollWidth` matched `innerWidth`; the compact confirmation dialog stayed inside `200..720`, its path field inside `221..699`, and its primary action inside `631..699`.
+  - Final `bun run gate` passed local checks (`typecheck`, full tests, 18/18 fake evals, 3/3 hard-gate APIx cases, cache benchmark, and build); `provider_gate` failed only because the configured DeepSeek URL was unreachable for `EC-REAL-001` and `EC-REAL-002`.
+
 ## Step 76: Desktop Scoped Git Change Groups
 
 - Scope: make desktop Git review distinguish index, working-tree, and untracked changes instead of presenting a misleading combined file list and combined diff.
