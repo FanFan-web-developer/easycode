@@ -1,9 +1,10 @@
 import { useEffect, useState } from "react"
-import type { DesktopSkillInfo, DesktopWorkspaceStatus } from "../shared/protocol.js"
+import type { DesktopSkillInfo, DesktopWorkspaceDiffScope, DesktopWorkspaceStatus } from "../shared/protocol.js"
 import type { SelectOption } from "./app-types.js"
 import { providerReadinessDetail, providerReadinessLabel } from "./provider-readiness.js"
 import { languageSelectOptions, normalizeSelectOptions } from "./select-options.js"
 import type { DesktopProviderReadiness, DesktopSettings } from "../shared/protocol.js"
+import { workspaceChangeGroups, type WorkspaceChangeGroup } from "./workspace-change-groups.js"
 
 export type ContextRailCopy = {
   activeCount: (count: number) => string
@@ -29,7 +30,10 @@ export type ContextRailCopy = {
   showAllSkills: (count: number) => string
   showLess: string
   skills: string
+  stagedChanges: string
   thinking: string
+  unstagedChanges: string
+  untrackedFiles: string
   viewFileDiff: (filePath: string) => string
   workingTree: string
   workspace: string
@@ -67,7 +71,7 @@ export function ContextRail({
   onClearSkills: () => void
   onRefreshWorkspaceStatus: () => void
   onToggleSkill: (skill: DesktopSkillInfo) => void
-  onViewFileDiff: (filePath: string) => void
+  onViewFileDiff: (filePath: string, scope: DesktopWorkspaceDiffScope) => void
   open: boolean
   providerOptions: string[]
   providerReadiness?: DesktopProviderReadiness
@@ -102,8 +106,9 @@ function Panel({ action, children, title }: { action?: React.ReactNode; children
   return <section className="rail-panel"><div className="panel-title"><h2>{title}</h2>{action}</div>{children}</section>
 }
 
-function GitChangesPanel({ copy, onRefresh, onViewFileDiff, refreshing, status }: { copy: ContextRailCopy; onRefresh: () => void; onViewFileDiff: (filePath: string) => void; refreshing: boolean; status?: DesktopWorkspaceStatus }) {
+function GitChangesPanel({ copy, onRefresh, onViewFileDiff, refreshing, status }: { copy: ContextRailCopy; onRefresh: () => void; onViewFileDiff: (filePath: string, scope: DesktopWorkspaceDiffScope) => void; refreshing: boolean; status?: DesktopWorkspaceStatus }) {
   const files = status?.files ?? []
+  const groups = workspaceChangeGroups(files)
   const refreshAction = <button className="panel-refresh-button" type="button" onClick={onRefresh} disabled={refreshing} aria-label={copy.refreshGitChanges} title={copy.refreshGitChanges}><span className={refreshing ? "spinning" : ""} aria-hidden="true">↻</span></button>
   return <Panel action={refreshAction} title={copy.changes}>
     <InfoRow label={copy.gitBranch} value={status?.branch ?? "unknown"} detail={aheadBehind(status)} />
@@ -114,14 +119,24 @@ function GitChangesPanel({ copy, onRefresh, onViewFileDiff, refreshing, status }
     </div>
     {status?.error && <div className="empty-list compact">{status.error}</div>}
     {!status?.error && files.length === 0 && <div className="empty-list compact">{status?.clean ? copy.clean : copy.noPathResolved}</div>}
-    {files.length > 0 && <div className="git-change-list">
-      {files.map((file) => <button className="git-change-row" key={`${file.status}-${file.path}`} onClick={() => onViewFileDiff(file.path)} title={copy.viewFileDiff(file.path)} type="button">
+    {groups.length > 0 && <div className="git-change-groups">
+      {groups.map((group) => <GitChangeGroup copy={copy} group={group} key={group.scope} onViewFileDiff={onViewFileDiff} />)}
+    </div>}
+  </Panel>
+}
+
+function GitChangeGroup({ copy, group, onViewFileDiff }: { copy: ContextRailCopy; group: WorkspaceChangeGroup; onViewFileDiff: (filePath: string, scope: DesktopWorkspaceDiffScope) => void }) {
+  const title = group.scope === "staged" ? copy.stagedChanges : group.scope === "unstaged" ? copy.unstagedChanges : copy.untrackedFiles
+  return <section className="git-change-group" aria-label={title}>
+    <div className="git-change-group-title"><span>{title}</span><small>{group.rows.length}</small></div>
+    <div className="git-change-list">
+      {group.rows.map((file) => <button className="git-change-row" key={`${group.scope}-${file.path}`} onClick={() => onViewFileDiff(file.path, group.scope)} title={copy.viewFileDiff(file.path)} type="button">
         <span>{file.status}</span>
         <strong title={file.path}>{file.path}</strong>
         <small><b>+{file.added}</b><i>-{file.deleted}</i></small>
       </button>)}
-    </div>}
-  </Panel>
+    </div>
+  </section>
 }
 
 function SkillsPanel({ copy, onClear, onToggle, running, selected, skills }: { copy: ContextRailCopy; onClear: () => void; onToggle: (skill: DesktopSkillInfo) => void; running: boolean; selected: string[]; skills: DesktopSkillInfo[] }) {

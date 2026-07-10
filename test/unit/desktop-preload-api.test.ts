@@ -147,14 +147,14 @@ describe("desktop preload api", () => {
     await api.openWorkspaceFile("src/app.ts", "/repo/a")
     await api.openWorkspaceChanges("/repo/a")
     await api.workspaceStatus("/repo/a")
-    await api.workspaceDiff("src/app.ts", "/repo/a")
+    await api.workspaceDiff("src/app.ts", "/repo/a", "staged")
 
     expect(ipc.calls).toEqual([
       { channel: "sidecar:getProviderReadiness", args: ["/repo/a"] },
       { channel: "desktop:openWorkspaceFile", args: ["src/app.ts", "/repo/a"] },
       { channel: "desktop:openWorkspaceChanges", args: ["/repo/a"] },
       { channel: "desktop:workspaceStatus", args: ["/repo/a"] },
-      { channel: "desktop:workspaceDiff", args: ["src/app.ts", "/repo/a"] },
+      { channel: "desktop:workspaceDiff", args: ["src/app.ts", "/repo/a", "staged"] },
     ])
   })
 

@@ -1,5 +1,5 @@
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react"
-import type { DesktopDeleteSessionResult, DesktopFileSelection, DesktopGoalState, DesktopGoalStatusResult, DesktopListSessionsResult, DesktopListSkillsResult, DesktopLoadSessionResult, DesktopPermissionMode, DesktopPlanStatusResult, DesktopProviderListResult, DesktopProviderReadiness, DesktopProviderSetup, DesktopProviderSetupResult, DesktopRunMode, DesktopSessionSummary, DesktopSettings, DesktopSkillInfo, DesktopSlashCommandResult, DesktopWorkspaceStatus, SidecarFrame } from "../shared/protocol.js"
+import type { DesktopDeleteSessionResult, DesktopFileSelection, DesktopGoalState, DesktopGoalStatusResult, DesktopListSessionsResult, DesktopListSkillsResult, DesktopLoadSessionResult, DesktopPermissionMode, DesktopPlanStatusResult, DesktopProviderListResult, DesktopProviderReadiness, DesktopProviderSetup, DesktopProviderSetupResult, DesktopRunMode, DesktopSessionSummary, DesktopSettings, DesktopSkillInfo, DesktopSlashCommandResult, DesktopWorkspaceDiffScope, DesktopWorkspaceStatus, SidecarFrame } from "../shared/protocol.js"
 import { applyAttachmentAction, clearAttachmentSlashCommands, pickedFileSlashCommands, rejectedWorkspaceFileSummary, removeFileRefs, type AttachmentAction, type DesktopAttachment } from "./attachment-state.js"
 import type { Attachment, ChatItem, PermissionMode, PermissionPrompt, PlanPrompt, Progress, RunMode } from "./app-types.js"
 import { Composer } from "./composer.js"
@@ -18,6 +18,7 @@ import { effortSettingsCommand, languageSettingsCommand, maxStepsSettingsCommand
 import { applyDirectDesktopSettings, reconcileDesktopSettingsFromSidecar, restoreLoadedSessionSettings } from "./settings-sync.js"
 import { WorkspaceSidebar } from "./workspace-sidebar.js"
 import { WorkspaceChangesBar } from "./workspace-status-bar.js"
+import { workspaceChangePaths } from "./workspace-change-groups.js"
 import { WorkspaceDiffModal, type WorkspaceDiffModalState } from "./workspace-diff-modal.js"
 import { workspaceDiffNavigation } from "./workspace-diff-navigation.js"
 
@@ -144,6 +145,8 @@ export function App() {
   const activeSessionTitle = safeSessionTitle(draftSession ? copy.newChat : fullPromptTitle || (currentSession ? fullSessionTitle(currentSession) : draftSessionTitle || settings?.session || copy.defaultSessionTitle))
   const providerSetupVisible = Boolean(settings && providerReadiness && providerReadiness.status !== "ready" && !providerSetupDismissed)
   const canStartProviderRun = !providerReadiness || providerReadiness.status === "ready"
+  const activeWorkspaceDiffScope = workspaceDiff?.status === "ready" ? workspaceDiff.result.scope : workspaceDiff?.scope ?? "all"
+  const activeWorkspaceDiffPath = workspaceDiff?.status === "ready" ? workspaceDiff.result.path : workspaceDiff?.path ?? ""
 
   const handleFrame = (frame: SidecarFrame) => {
     if (!("type" in frame) || frame.type !== "event") return
@@ -869,7 +872,7 @@ export function App() {
         onClearSkills={clearSkills}
         onRefreshWorkspaceStatus={() => void refreshWorkspaceStatus().catch((error) => reportUiError(error, "Workspace status refresh failed."))}
         onToggleSkill={toggleSkill}
-        onViewFileDiff={(filePath) => void openWorkspaceDiff(filePath)}
+        onViewFileDiff={(filePath, scope) => void openWorkspaceDiff(filePath, scope)}
         open={contextRailOpen}
         providerOptions={providerOptions}
         providerReadiness={providerReadiness}
@@ -893,12 +896,12 @@ export function App() {
       />}
       {workspaceDiff && <WorkspaceDiffModal
         copy={copy}
-        navigation={workspaceDiffNavigation(workspaceStatus?.files ?? [], workspaceDiff.status === "ready" ? workspaceDiff.result.path : workspaceDiff.path)}
+        navigation={workspaceDiffNavigation(workspaceChangePaths(workspaceStatus?.files ?? [], activeWorkspaceDiffScope), activeWorkspaceDiffPath)}
         state={workspaceDiff}
         onClose={closeWorkspaceDiff}
-        onNavigate={(filePath) => void openWorkspaceDiff(filePath)}
+        onNavigate={(filePath, scope) => void openWorkspaceDiff(filePath, scope)}
         onOpenFile={(filePath) => void openWorkspaceFileFromMessage(filePath)}
-        onRefresh={(filePath) => void refreshWorkspaceDiff(filePath)}
+        onRefresh={(filePath, scope) => void refreshWorkspaceDiff(filePath, scope)}
       />}
     </main>
   )
@@ -940,24 +943,24 @@ export function App() {
     }
   }
 
-  async function openWorkspaceDiff(filePath: string) {
+  async function openWorkspaceDiff(filePath: string, scope: DesktopWorkspaceDiffScope = "all") {
     const workspaceRoot = settingsRef.current?.workspaceRoot
     if (!workspaceRoot) return
     const requestId = ++workspaceDiffRequestRef.current
-    setWorkspaceDiff({ status: "loading", path: filePath })
+    setWorkspaceDiff({ status: "loading", path: filePath, scope })
     try {
-      const result = await window.easycode.workspaceDiff(filePath, workspaceRoot)
+      const result = await window.easycode.workspaceDiff(filePath, workspaceRoot, scope)
       if (requestId !== workspaceDiffRequestRef.current || !isCurrentWorkspace(workspaceRoot)) return
       setWorkspaceDiff({ status: "ready", result })
     } catch (error) {
       if (requestId !== workspaceDiffRequestRef.current || !isCurrentWorkspace(workspaceRoot)) return
-      setWorkspaceDiff({ status: "error", path: filePath, message: errorMessage(error) })
+      setWorkspaceDiff({ status: "error", path: filePath, scope, message: errorMessage(error) })
     }
   }
 
-  async function refreshWorkspaceDiff(filePath: string) {
+  async function refreshWorkspaceDiff(filePath: string, scope: DesktopWorkspaceDiffScope) {
     const statusRefresh = refreshWorkspaceStatus().catch((error) => reportUiError(error, "Workspace status refresh failed."))
-    await openWorkspaceDiff(filePath)
+    await openWorkspaceDiff(filePath, scope)
     await statusRefresh
   }
 

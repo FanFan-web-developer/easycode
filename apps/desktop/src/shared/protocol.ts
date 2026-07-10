@@ -179,16 +179,28 @@ export type DesktopWorkspaceChange = {
   status: string
   added: number
   deleted: number
+  staged?: DesktopWorkspaceChangeScope
+  unstaged?: DesktopWorkspaceChangeScope
+  untracked: boolean
+}
+
+export type DesktopWorkspaceChangeScope = {
+  status: string
+  added: number
+  deleted: number
 }
 
 export type DesktopWorkspaceDiff = {
   path: string
   diff: string
+  scope: DesktopWorkspaceDiffScope
   status: "modified" | "untracked" | "clean"
   binary: boolean
   truncated: boolean
   exists: boolean
 }
+
+export type DesktopWorkspaceDiffScope = "all" | "staged" | "unstaged" | "untracked"
 
 export type DesktopRunMode = "build" | "plan" | "goal"
 export type DesktopPermissionMode = "ask" | "auto-review"
@@ -248,7 +260,7 @@ export type DesktopApi = {
   showSidecar(): Promise<{ opened: boolean }>
   sidecarStatus(): Promise<DesktopSidecarStatus>
   workspaceStatus(workspaceRoot?: string): Promise<DesktopWorkspaceStatus>
-  workspaceDiff(filePath: string, workspaceRoot?: string): Promise<DesktopWorkspaceDiff>
+  workspaceDiff(filePath: string, workspaceRoot?: string, scope?: DesktopWorkspaceDiffScope): Promise<DesktopWorkspaceDiff>
   executeSlashCommand(text: string, pendingImages?: number, pendingFiles?: number, workspaceRoot?: string): Promise<DesktopSlashCommandResult>
   runPrompt(text: string, mode?: DesktopRunMode, images?: string[], permissionMode?: DesktopPermissionMode, files?: string[], workspaceRoot?: string): Promise<any>
   cancelRun(workspaceRoot?: string): Promise<any>

@@ -160,8 +160,8 @@ describe("desktop renderer UI contracts", () => {
     expect(source).toContain("<ContextRail")
     expect(contextRail).toContain("function GitChangesPanel")
     expect(contextRail).toContain("status?.files ?? []")
-    expect(contextRail).toContain("onViewFileDiff(file.path)")
-    expect(source).toContain("window.easycode.workspaceDiff(filePath, workspaceRoot)")
+    expect(contextRail).toContain("onViewFileDiff(file.path, group.scope)")
+    expect(source).toContain("window.easycode.workspaceDiff(filePath, workspaceRoot, scope)")
     expect(source).toContain("<WorkspaceDiffModal")
     expect(workspaceDiffModal).toContain('className="diff-preview"')
     expect(workspaceDiffModal).toContain("state.result.truncated")
@@ -169,7 +169,7 @@ describe("desktop renderer UI contracts", () => {
     expect(workspaceDiffModal).toContain("event.altKey")
     expect(workspaceDiffModal).toContain('event.key === "ArrowLeft"')
     expect(workspaceDiffModal).toContain('event.key !== "ArrowRight"')
-    expect(workspaceDiffModal).toContain("onNavigate(navigation.next)")
+    expect(workspaceDiffModal).toContain("onNavigate(navigation.next, scope)")
     expect(source).toContain("workspaceDiffRequestRef.current")
     expect(source).toContain("requestId !== workspaceDiffRequestRef.current")
     expect(composer).toContain('<span className="send-icon" aria-hidden="true" />')
@@ -261,6 +261,7 @@ describe("desktop renderer UI contracts", () => {
 
   test("opens workspace changes in the local git changes panel", async () => {
     const main = await Bun.file(path.join(import.meta.dir, "../../apps/desktop/src/main/main.ts")).text()
+    const workspaceStatus = await Bun.file(path.join(import.meta.dir, "../../apps/desktop/src/main/workspace-status.ts")).text()
     const app = await rendererFile("App.tsx")
     const contextRail = await rendererFile("context-rail.tsx")
 
@@ -269,7 +270,8 @@ describe("desktop renderer UI contracts", () => {
     expect(contextRail).toContain("function GitChangesPanel")
     expect(contextRail).toContain("status?.files ?? []")
     expect(main).toContain('execFileAsync("git", ["diff", "--numstat"]')
-    expect(main).toContain("function parseGitNumstat")
+    expect(main).toContain('import { parseGitStatus } from "./workspace-status.js"')
+    expect(workspaceStatus).toContain("function parseGitNumstat")
   })
 
   test("uses compact typography for sidebar sessions and message markdown", async () => {
@@ -355,11 +357,11 @@ describe("desktop renderer UI contracts", () => {
     expect(source).toContain("workspaceStatusRequestRef.current")
     expect(source).toContain("requestId !== workspaceStatusRequestRef.current")
     expect(source).toContain("onRefreshWorkspaceStatus={() => void refreshWorkspaceStatus()")
-    expect(source).toContain("async function refreshWorkspaceDiff(filePath: string)")
+    expect(source).toContain("async function refreshWorkspaceDiff(filePath: string, scope: DesktopWorkspaceDiffScope)")
     expect(contextRail).toContain('className="panel-refresh-button"')
     expect(contextRail).toContain("copy.refreshGitChanges")
     expect(diffModal).toContain('className="diff-refresh"')
-    expect(diffModal).toContain("onRefresh(path)")
+    expect(diffModal).toContain("onRefresh(path, scope)")
     expect(diffModal).toContain("{navigation.total > 0 && <>")
     expect(copy).toContain('refreshCurrentDiff: "刷新当前 Git diff"')
     expect(copy).toContain('refreshGitChanges: "Refresh Git changes"')

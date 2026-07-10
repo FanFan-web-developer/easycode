@@ -8,6 +8,26 @@ Status: Draft
 - Active documentation priority: keep roadmap specs aligned with implemented modules instead of leaving implemented slices marked as drafts.
 - Current product priority after stabilization: desktop V1 readiness and release hygiene on top of the local sidecar boundary.
 
+## Step 76: Desktop Scoped Git Change Groups
+
+- Scope: make desktop Git review distinguish index, working-tree, and untracked changes instead of presenting a misleading combined file list and combined diff.
+- Implementation:
+  - Extracted Git porcelain and numstat parsing into a focused main-process module that preserves staged and unstaged status codes and line counts per unique file.
+  - Added Staged Changes, Unstaged Changes, and Untracked Files renderer groups; mixed files appear in both tracked groups with scope-specific stats.
+  - Extended the existing `desktop:workspaceDiff` request with a read-only scope while keeping its default all-changes behavior backward compatible.
+  - Made modal scope labeling, previous/next navigation, refresh, loading/error state, and untracked preview preserve the selected group.
+  - Added real Git fixture, parser, group projection, preload, renderer, integration, capability-alignment, responsive UI, and running GUI coverage.
+- Verification:
+  - `bun test test/unit/desktop-workspace-status.test.ts test/unit/desktop-workspace-change-groups.test.ts test/unit/desktop-workspace-diff.test.ts test/unit/desktop-preload-api.test.ts test/unit/desktop-renderer-ui.test.ts test/unit/desktop-capability-alignment.test.ts test/integration/desktop-renderer-ui.test.ts --timeout 30000`: 35 pass, 0 fail.
+  - `bun run typecheck`: pass.
+  - Direct parsing of the current worktree reported 20 unique files as 16 unstaged and 4 untracked, matching the real Git state with no invented staged files.
+  - `bun run desktop:build`: pass; sidecar compile, preload bundle, TypeScript, and Vite renderer build all completed.
+  - `bun run electron` from `apps/desktop` launched the latest final desktop build without preload, IPC, module-resolution, or runtime startup errors.
+  - Playwright rendered 2 staged rows, 2 unstaged rows, and 1 untracked row from 4 unique files; the mixed file appeared in both tracked groups with its scoped stats.
+  - Playwright opened the mixed file from both groups and observed distinct staged and unstaged request scopes/content. `Alt+Left` navigation and current-diff refresh retained staged scope, and the untracked row requested untracked scope.
+  - At 920 x 700, `scrollWidth` matched `innerWidth`; the modal stayed inside `24..896`, the diff preview inside `45..875`, and the scope/path row remained visible without overlap.
+  - Final `bun run gate` passed local checks (`typecheck`, full tests, 18/18 fake evals, 3/3 hard-gate APIx cases, cache benchmark, and build); `provider_gate` failed only because the configured DeepSeek URL was unreachable for `EC-REAL-001` and `EC-REAL-002`.
+
 ## Step 75: Desktop Workspace Review Refresh
 
 - Scope: let desktop users explicitly synchronize Git status and reread the current diff while reviewing changes created outside the current run.

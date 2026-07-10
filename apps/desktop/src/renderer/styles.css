@@ -2017,13 +2017,39 @@ pre {
   font-weight: 720;
 }
 
+.git-change-groups {
+  display: grid;
+  gap: 12px;
+  min-width: 0;
+  max-height: 300px;
+  overflow: auto;
+  padding-top: 3px;
+}
+
+.git-change-group {
+  display: grid;
+  gap: 5px;
+  min-width: 0;
+}
+
+.git-change-group-title {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  color: #7a879d;
+  font-size: 11px;
+  font-weight: 720;
+}
+
+.git-change-group-title small {
+  color: #9aa4b8;
+  font-size: 10px;
+}
+
 .git-change-list {
   display: grid;
   gap: 5px;
   min-width: 0;
-  max-height: 240px;
-  overflow: auto;
-  padding-top: 3px;
 }
 
 .git-change-row {
@@ -2528,6 +2554,20 @@ pre {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+.diff-path-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+
+.diff-path-row > span {
+  flex: 0 0 auto;
+  color: #3157d8;
+  font-size: 11px;
+  font-weight: 760;
 }
 
 .diff-modal-close {

@@ -33,7 +33,9 @@ const alignmentEvidence: CapabilityEvidence[] = [
   {
     capability: "workspace diff preview",
     unit: [
-      { file: "test/unit/desktop-workspace-diff.test.ts", patterns: ["reads unstaged and staged changes", "renders bounded untracked text", "rejects paths that can escape"] },
+      { file: "test/unit/desktop-workspace-status.test.ts", patterns: ["separates staged unstaged and untracked file state", "keeps staged additions and working-tree deletions"] },
+      { file: "test/unit/desktop-workspace-change-groups.test.ts", patterns: ["groups each file by real git scope", "keeps mixed files in both scoped navigation lists"] },
+      { file: "test/unit/desktop-workspace-diff.test.ts", patterns: ["reads unstaged and staged changes", "keeps staged and unstaged diff scopes separate", "renders bounded untracked text", "rejects paths that can escape"] },
       { file: "test/unit/desktop-workspace-diff-navigation.test.ts", patterns: ["points forward from the first changed file", "points both ways from a middle changed file", "does not invent targets"] },
       { file: "test/unit/desktop-preload-api.test.ts", patterns: ["desktop:workspaceDiff"] },
       { file: "test/unit/desktop-renderer-ui.test.ts", patterns: ["refreshes workspace review surfaces with latest-request wins"] },

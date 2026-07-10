@@ -2,22 +2,26 @@ import { execFile } from "node:child_process"
 import { lstat, open } from "node:fs/promises"
 import path from "node:path"
 import { promisify } from "node:util"
-import type { DesktopWorkspaceDiff } from "../shared/protocol.js"
+import type { DesktopWorkspaceDiff, DesktopWorkspaceDiffScope } from "../shared/protocol.js"
 
 const execFileAsync = promisify(execFile)
 export const workspaceDiffLimit = 200_000
 const gitOutputLimit = 1_000_000
 
-export async function readWorkspaceDiff(workspaceRoot: string, requestedPath: string): Promise<DesktopWorkspaceDiff> {
+export async function readWorkspaceDiff(workspaceRoot: string, requestedPath: string, scope: DesktopWorkspaceDiffScope = "all"): Promise<DesktopWorkspaceDiff> {
+  if (!workspaceDiffScopes.includes(scope)) throw new Error(`Unsupported workspace diff scope: ${String(scope)}`)
   const target = resolveDiffTarget(workspaceRoot, requestedPath)
   const exists = await isRegularFile(target.absolutePath)
-  const trackedDiff = await readTrackedDiff(target.root, target.relativePath)
+  if (scope === "untracked") return readUntrackedScope(target.root, target.absolutePath, target.relativePath, exists, scope)
+
+  const trackedDiff = await readTrackedDiff(target.root, target.relativePath, scope)
 
   if (trackedDiff.trim()) {
     const bounded = boundDiff(trackedDiff)
     return {
       path: target.relativePath,
       diff: bounded.diff,
+      scope,
       status: "modified",
       binary: isBinaryDiff(trackedDiff),
       truncated: bounded.truncated,
@@ -25,15 +29,12 @@ export async function readWorkspaceDiff(workspaceRoot: string, requestedPath: st
     }
   }
 
-  const porcelain = await runGit(target.root, ["status", "--porcelain=v1", "--untracked-files=all", "--", target.relativePath])
-  if (porcelain.split("\n").some((line) => line.startsWith("??"))) {
-    if (!exists) throw new Error("Diff preview only supports regular workspace files.")
-    return readUntrackedDiff(target.absolutePath, target.relativePath)
-  }
+  if (scope === "all") return readUntrackedScope(target.root, target.absolutePath, target.relativePath, exists, scope)
 
   return {
     path: target.relativePath,
     diff: "",
+    scope,
     status: "clean",
     binary: false,
     truncated: false,
@@ -41,7 +42,11 @@ export async function readWorkspaceDiff(workspaceRoot: string, requestedPath: st
   }
 }
 
-async function readTrackedDiff(root: string, relativePath: string) {
+const workspaceDiffScopes: readonly DesktopWorkspaceDiffScope[] = ["all", "staged", "unstaged", "untracked"]
+
+async function readTrackedDiff(root: string, relativePath: string, scope: Exclude<DesktopWorkspaceDiffScope, "untracked">) {
+  if (scope === "staged") return runGit(root, ["diff", "--no-ext-diff", "--no-textconv", "--unified=3", "--cached", "--", relativePath])
+  if (scope === "unstaged") return runGit(root, ["diff", "--no-ext-diff", "--no-textconv", "--unified=3", "--", relativePath])
   const args = ["diff", "--no-ext-diff", "--no-textconv", "--unified=3", "HEAD", "--", relativePath]
   try {
     return await runGit(root, args)
@@ -54,7 +59,16 @@ async function readTrackedDiff(root: string, relativePath: string) {
   }
 }
 
-async function readUntrackedDiff(absolutePath: string, relativePath: string): Promise<DesktopWorkspaceDiff> {
+async function readUntrackedScope(root: string, absolutePath: string, relativePath: string, exists: boolean, scope: DesktopWorkspaceDiffScope): Promise<DesktopWorkspaceDiff> {
+  const porcelain = await runGit(root, ["status", "--porcelain=v1", "--untracked-files=all", "--", relativePath])
+  if (!porcelain.split("\n").some((line) => line.startsWith("??"))) {
+    return { path: relativePath, diff: "", scope, status: "clean", binary: false, truncated: false, exists }
+  }
+  if (!exists) throw new Error("Diff preview only supports regular workspace files.")
+  return readUntrackedDiff(absolutePath, relativePath, scope)
+}
+
+async function readUntrackedDiff(absolutePath: string, relativePath: string, scope: DesktopWorkspaceDiffScope): Promise<DesktopWorkspaceDiff> {
   const handle = await open(absolutePath, "r")
   try {
     const buffer = Buffer.alloc(workspaceDiffLimit + 1)
@@ -62,7 +76,7 @@ async function readUntrackedDiff(absolutePath: string, relativePath: string): Pr
     const truncated = bytesRead > workspaceDiffLimit
     const bytes = buffer.subarray(0, Math.min(bytesRead, workspaceDiffLimit))
     if (bytes.includes(0)) {
-      return { path: relativePath, diff: "", status: "untracked", binary: true, truncated, exists: true }
+      return { path: relativePath, diff: "", scope, status: "untracked", binary: true, truncated, exists: true }
     }
 
     const text = bytes.toString("utf8").replace(/\r\n/g, "\n")
@@ -79,7 +93,7 @@ async function readUntrackedDiff(absolutePath: string, relativePath: string): Pr
       ...(!hasTrailingNewline && lines.length > 0 ? ["\\ No newline at end of file"] : []),
     ].join("\n")
     const bounded = boundDiff(diff, truncated)
-    return { path: relativePath, diff: bounded.diff, status: "untracked", binary: false, truncated: bounded.truncated, exists: true }
+    return { path: relativePath, diff: bounded.diff, scope, status: "untracked", binary: false, truncated: bounded.truncated, exists: true }
   } finally {
     await handle.close()
   }

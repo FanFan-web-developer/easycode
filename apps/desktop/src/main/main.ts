@@ -11,8 +11,9 @@ import { SidecarBridge } from "./sidecar.js"
 import { WorkspaceSidecarRegistry } from "./sidecar-registry.js"
 import { resolveWorkspaceFilePath, workspacePathInfo } from "./workspace-path.js"
 import { readWorkspaceDiff } from "./workspace-diff.js"
+import { parseGitStatus } from "./workspace-status.js"
 import { configureDesktopAppIdentity } from "./app-identity.js"
-import type { DesktopPermissionMode, DesktopProviderSetup, DesktopRunMode, DesktopSettings, DesktopWorkspaceChange } from "../shared/protocol.js"
+import type { DesktopPermissionMode, DesktopProviderSetup, DesktopRunMode, DesktopSettings, DesktopWorkspaceDiffScope } from "../shared/protocol.js"
 
 const currentDir = path.dirname(fileURLToPath(import.meta.url))
 const execFileAsync = promisify(execFile)
@@ -195,7 +196,7 @@ desktopHandle("desktop:workspaceStatus", async (_event, workspaceRoot?: string) 
       execFileAsync("git", ["diff", "--numstat"], { cwd: root }).catch(() => ({ stdout: "" })),
       execFileAsync("git", ["diff", "--cached", "--numstat"], { cwd: root }).catch(() => ({ stdout: "" })),
     ])
-    return parseGitStatus(stdout, `${diff.stdout}\n${cachedDiff.stdout}`)
+    return parseGitStatus(stdout, diff.stdout, cachedDiff.stdout)
   } catch (error) {
     return {
       branch: "unknown",
@@ -209,9 +210,9 @@ desktopHandle("desktop:workspaceStatus", async (_event, workspaceRoot?: string) 
   }
 })
 
-desktopHandle("desktop:workspaceDiff", async (_event, filePath: string, workspaceRoot?: string) => {
+desktopHandle("desktop:workspaceDiff", async (_event, filePath: string, workspaceRoot?: string, scope?: DesktopWorkspaceDiffScope) => {
   const settings = await loadSettings()
-  return readWorkspaceDiff(workspaceRoot || settings.workspaceRoot, filePath)
+  return readWorkspaceDiff(workspaceRoot || settings.workspaceRoot, filePath, scope)
 })
 
 app.whenReady().then(() => {
@@ -240,82 +241,6 @@ async function sidecarRequest(workspaceRoot: string | undefined, method: string,
   const activate = requestedRoot === activeRoot
   registry.configureWorkspace({ ...settings, workspaceRoot: requestedRoot, session: activate ? settings.session : "default" }, { activate })
   return registry.requestWorkspace(requestedRoot, method, params)
-}
-
-function parseGitStatus(output: string, numstat = "") {
-  const lines = output.trim().split("\n").filter(Boolean)
-  const branchLine = lines.find((line) => line.startsWith("## "))
-  const branchInfo = parseBranchLine(branchLine)
-  const stats = parseGitNumstat(numstat)
-  const files: DesktopWorkspaceChange[] = []
-  let added = 0
-  let deleted = 0
-  let changedFiles = 0
-  for (const line of lines) {
-    if (line.startsWith("## ")) continue
-    changedFiles += 1
-    const status = line.slice(0, 2)
-    const filePath = normalizeGitStatusPath(line.slice(3).trim())
-    const fileStats = stats.get(filePath)
-    files.push({
-      path: filePath,
-      status: status.trim() || "M",
-      added: fileStats?.added ?? 0,
-      deleted: fileStats?.deleted ?? 0,
-    })
-    if (status.includes("A") || status.includes("?")) added += 1
-    if (status.includes("D")) deleted += 1
-  }
-  return {
-    branch: branchInfo.branch,
-    clean: changedFiles === 0,
-    added,
-    deleted,
-    changedFiles,
-    files,
-    ahead: branchInfo.ahead,
-    behind: branchInfo.behind,
-  }
-}
-
-function parseGitNumstat(output: string) {
-  const stats = new Map<string, { added: number; deleted: number }>()
-  for (const line of output.trim().split("\n").filter(Boolean)) {
-    const [addedText, deletedText, ...pathParts] = line.split("\t")
-    const filePath = normalizeGitStatusPath(pathParts.join("\t").trim())
-    if (!filePath) continue
-    const previous = stats.get(filePath)
-    stats.set(filePath, {
-      added: (previous?.added ?? 0) + parseNumstatValue(addedText),
-      deleted: (previous?.deleted ?? 0) + parseNumstatValue(deletedText),
-    })
-  }
-  return stats
-}
-
-function parseNumstatValue(value: string | undefined) {
-  if (!value || value === "-") return 0
-  const numeric = Number(value)
-  return Number.isFinite(numeric) ? numeric : 0
-}
-
-function normalizeGitStatusPath(filePath: string) {
-  const renamed = filePath.split(" -> ").at(-1) ?? filePath
-  return renamed.replace(/^"|"$/g, "")
-}
-
-function parseBranchLine(line: string | undefined) {
-  if (!line) return { branch: "unknown" }
-  const body = line.slice(3)
-  const [branchPart, trackingPart] = body.split("...")
-  const branch = branchPart || "unknown"
-  const ahead = trackingPart?.match(/ahead (\d+)/)?.[1]
-  const behind = trackingPart?.match(/behind (\d+)/)?.[1]
-  return {
-    branch,
-    ...(ahead ? { ahead: Number(ahead) } : {}),
-    ...(behind ? { behind: Number(behind) } : {}),
-  }
 }
 
 function vscodeFileUri(filePath: string) {

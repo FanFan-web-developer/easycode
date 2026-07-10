@@ -36,6 +36,31 @@ describe("desktop workspace diff", () => {
     expect(deleted.diff).toContain("-export const value = 1")
   })
 
+  test("keeps staged and unstaged diff scopes separate", async () => {
+    const root = await gitFixture()
+    const file = path.join(root, "src", "app.ts")
+    await writeFile(file, "export const value = 2\n")
+    await git(root, "add", "src/app.ts")
+    await writeFile(file, "export const value = 3\n")
+
+    const staged = await readWorkspaceDiff(root, "src/app.ts", "staged")
+    expect(staged).toMatchObject({ scope: "staged", status: "modified" })
+    expect(staged.diff).toContain("-export const value = 1")
+    expect(staged.diff).toContain("+export const value = 2")
+    expect(staged.diff).not.toContain("+export const value = 3")
+
+    const unstaged = await readWorkspaceDiff(root, "src/app.ts", "unstaged")
+    expect(unstaged).toMatchObject({ scope: "unstaged", status: "modified" })
+    expect(unstaged.diff).toContain("-export const value = 2")
+    expect(unstaged.diff).toContain("+export const value = 3")
+    expect(unstaged.diff).not.toContain("-export const value = 1")
+
+    const all = await readWorkspaceDiff(root, "src/app.ts")
+    expect(all).toMatchObject({ scope: "all", status: "modified" })
+    expect(all.diff).toContain("-export const value = 1")
+    expect(all.diff).toContain("+export const value = 3")
+  })
+
   test("renders bounded untracked text and identifies binary files", async () => {
     const root = await gitFixture()
     await writeFile(path.join(root, "notes.txt"), `${"x".repeat(workspaceDiffLimit + 100)}\n`)
@@ -49,12 +74,17 @@ describe("desktop workspace diff", () => {
     const binary = await readWorkspaceDiff(root, "image.bin")
     expect(binary).toMatchObject({ status: "untracked", binary: true, exists: true })
     expect(binary.diff).toBe("")
+
+    const untracked = await readWorkspaceDiff(root, "notes.txt", "untracked")
+    expect(untracked).toMatchObject({ scope: "untracked", status: "untracked" })
+    expect(await readWorkspaceDiff(root, "notes.txt", "staged")).toMatchObject({ scope: "staged", status: "clean", diff: "" })
   })
 
   test("rejects paths that can escape the workspace", async () => {
     const root = await gitFixture()
     await expect(readWorkspaceDiff(root, "../outside.txt")).rejects.toThrow("relative path inside the workspace")
     await expect(readWorkspaceDiff(root, path.resolve(root, "src/app.ts"))).rejects.toThrow("relative path inside the workspace")
+    await expect(readWorkspaceDiff(root, "src/app.ts", "invalid" as never)).rejects.toThrow("Unsupported workspace diff scope")
   })
 
   async function gitFixture() {
