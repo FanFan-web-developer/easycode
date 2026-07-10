@@ -32,6 +32,7 @@
 - `EC-011`: Durable workflow lessons can be promoted into project memory.
 - `EC-REAL-001`: Real provider smoke eval with no tools and output matching.
 - `EC-REAL-002`: Real provider semantic-planning smoke eval that requires `find_definition`, `find_references`, and `plan_exit` for a same-name symbol rename plan without editing files.
+- `EC-REAL-003`: Explicit real-provider bounded execution eval for a semantic rename of `InvoiceService.format` to `formatInvoice`, requiring semantic lookup before editing and preserving `ReportService.format`.
 
 Tasks without `providers` are fake-provider deterministic evals. Real provider evals must opt in with `providers` and should avoid deterministic fake-only tool-sequence assertions unless explicitly intended.
 
@@ -54,6 +55,7 @@ Tasks without `providers` are fake-provider deterministic evals. Real provider e
 - `--provider <name>` narrows the provider pass to one provider; `--providers a,b` checks an explicit list.
 - Missing required credentials are recorded as `skipped` with the missing variable names, not as pass/fail.
 - Configured providers run the real smoke eval set, a small deterministic APIx hard-gate subset, and the real cache benchmark unless disabled with `--no-apix` or `--no-cache`. The default smoke set includes both a no-tool response check and a symbol-aware semantic-planning check.
+- Execution-oriented real evals such as `EC-REAL-003` are available for explicit runs while provider connectivity and model stability are being proven; they should not join the default smoke set until they have passing provider evidence.
 - Each unified gate run writes machine-readable JSON and Markdown to `.easycode/reports/quality-gate` so local and provider readiness can be compared over time.
 - The process exits non-zero only when a configured provider check fails; an all-skipped run is allowed for local development without credentials.
 - The shared real-provider smoke eval tasks `EC-REAL-001` and `EC-REAL-002` must stay aligned with the same provider set so the default gate does not silently skip supported providers.

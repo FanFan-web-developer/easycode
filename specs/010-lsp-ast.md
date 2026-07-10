@@ -45,9 +45,10 @@ LSP/AST support improves EasyCode beyond text search by giving the agent code-st
 - `EC-017` exercises a deterministic symbol-aware rename execution path: the run resolves `InvoiceService.format`, edits only the owning definition plus verified reference, leaves `ReportService.format` untouched, and performs post-edit semantic checks for old/new symbol references.
 - `EC-018` exercises rollback behavior for a failed symbol-aware edit: the eval initializes a git-backed fixture, performs a partial method rename, detects failed semantic verification, restores the changed file with `git_restore_guarded`, and confirms `InvoiceService.format` is back at its original definition.
 - `EC-REAL-002` extends real-provider smoke coverage beyond no-tool replies by requiring configured providers to use semantic navigation and produce a read-only symbol-aware rename plan for the same-name collision fixture.
+- `EC-REAL-003` defines an explicit real-provider bounded execution eval for the same rename path: semantic lookup first, edit only the owning definition plus verified reference, keep `ReportService.format` unchanged, then verify old/new symbol references.
 
 ## Remaining Roadmap
 
 - Keep generic symbol-aware edits behind focused eval coverage until real-provider behavior is proven.
-- Expand real-provider coverage from read-only semantic planning to bounded execution behavior before promoting generic symbol-aware edits.
+- Run and stabilize `EC-REAL-003` under healthy real-provider connectivity before promoting bounded execution into the default provider gate.
 - Promote generic symbol-aware edit execution only after rollback behavior and post-edit verification are covered outside the deterministic fake-provider path.

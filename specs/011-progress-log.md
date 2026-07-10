@@ -8,6 +8,21 @@ Status: Draft
 - Active documentation priority: keep roadmap specs aligned with implemented modules instead of leaving implemented slices marked as drafts.
 - Current product priority after stabilization: desktop V1 readiness and release hygiene on top of the local sidecar boundary.
 
+## Step 69: Explicit Real Provider Bounded Execution Eval
+
+- Scope: define the next real-provider LSP/AST promotion target without adding an unstable execution eval to the default provider gate.
+- Implementation:
+  - Added `EC-REAL-003`, an explicit build-mode real-provider eval for the bounded `InvoiceService.format` to `formatInvoice` rename path.
+  - The eval requires semantic lookup tools before editing, expects only `src/billing.ts` and `src/checkout.ts` to change, and preserves `ReportService.format`.
+  - Updated `specs/006-evals.md` and `specs/010-lsp-ast.md` to distinguish default smoke coverage from explicit execution-oriented real-provider validation.
+- Verification:
+  - `bun run dev/quality/eval.ts --provider fake --ids EC-REAL-003`: skipped as expected because `EC-REAL-003` is real-provider only.
+  - `bun test test/unit/provider-gate.test.ts --timeout 30000`: 6 pass, 0 fail.
+  - `bun run typecheck`: pass.
+  - `bun run dev/quality/eval.ts --provider fake`: 18/18 fake eval tasks passed; `EC-REAL-001`, `EC-REAL-002`, and `EC-REAL-003` skipped for fake as expected.
+  - `bun run gate` passed local checks (`typecheck`, `tests`, `eval_fake`, `apix_subset`, `cache_benchmark`, and `build`); the final report failed only at `provider_gate` because the configured DeepSeek provider was unreachable. The provider-gate smoke details still include only `EC-REAL-001` and `EC-REAL-002`.
+- Notes: keep `EC-REAL-003` out of the default smoke set until a healthy provider run proves it is stable enough for routine gates.
+
 ## Step 68: Real Provider Semantic Planning Smoke
 
 - Scope: move LSP/AST real-provider promotion beyond the no-tool smoke check without enabling generic symbol-aware edit execution.

@@ -1,0 +1,20 @@
+{
+  "id": "EC-REAL-003",
+  "mode": "build",
+  "prompt": "Use semantic navigation tools to safely rename InvoiceService.format to formatInvoice. Update only the owning definition and verified references. Do not edit ReportService.format. After editing, run semantic checks for the old and new symbols. Finish with this exact sentence: real bounded symbol edit ok: src/billing.ts and src/checkout.ts updated; ReportService.format untouched.",
+  "fixture": "evals/fixtures/semantic-collision",
+  "providers": ["openai", "deepseek", "openai-compatible"],
+  "expected": {
+    "status": "passed",
+    "changedFiles": ["src/billing.ts", "src/checkout.ts"],
+    "forbiddenFiles": ["src/reporting.ts"],
+    "requiredTools": ["find_definition", "find_references", "edit"],
+    "outputContains": [
+      "real bounded symbol edit ok",
+      "src/billing.ts",
+      "src/checkout.ts",
+      "ReportService.format untouched"
+    ],
+    "maxToolCalls": 12
+  }
+}
