@@ -1,5 +1,6 @@
-import { useState } from "react"
+import { useEffect, useRef, useState } from "react"
 import type { DesktopWorkspaceGitAction } from "../shared/protocol.js"
+import { useLatestRef } from "./hooks/use-latest-ref.js"
 
 type WorkspaceGitActionCopy = {
   cancel: string
@@ -19,6 +20,21 @@ export function WorkspaceGitActionModal({ action, copy, onClose, onConfirm, onEr
 }) {
   const [error, setError] = useState("")
   const [submitting, setSubmitting] = useState(false)
+  const modalRef = useRef<HTMLElement>(null)
+  const closeRef = useLatestRef(onClose)
+  const submittingRef = useLatestRef(submitting)
+  useEffect(() => {
+    modalRef.current?.focus()
+  }, [])
+  useEffect(() => {
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key !== "Escape" || submittingRef.current) return
+      event.preventDefault()
+      closeRef.current()
+    }
+    window.addEventListener("keydown", onKeyDown)
+    return () => window.removeEventListener("keydown", onKeyDown)
+  }, [closeRef, submittingRef])
   const confirm = async () => {
     setSubmitting(true)
     setError("")
@@ -34,7 +50,7 @@ export function WorkspaceGitActionModal({ action, copy, onClose, onConfirm, onEr
     }
   }
   return <div className="modal">
-    <section className="workspace-git-action-modal" role="dialog" aria-modal="true" aria-labelledby="workspace-git-action-title">
+    <section className="workspace-git-action-modal" ref={modalRef} role="dialog" aria-modal="true" aria-labelledby="workspace-git-action-title" tabIndex={-1}>
       <h2 id="workspace-git-action-title">{copy.workspaceGitActionTitle(action)}</h2>
       <p className="workspace-git-action-path" title={path}>{path}</p>
       <small>{copy.workspaceGitActionDetail}</small>

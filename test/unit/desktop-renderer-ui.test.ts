@@ -392,6 +392,18 @@ describe("desktop renderer UI contracts", () => {
     expect(css).toContain(".git-change-action:hover:not(:disabled)")
   })
 
+  test("keeps review dialogs keyboard-dismissible before a Git action is submitted", async () => {
+    const diffModal = await rendererFile("workspace-diff-modal.tsx")
+    const actionModal = await rendererFile("workspace-git-action-modal.tsx")
+
+    expect(diffModal).toContain('event.key === "Escape"')
+    expect(diffModal).toContain("modalRef.current?.focus()")
+    expect(diffModal).toContain("tabIndex={-1}")
+    expect(actionModal).toContain('event.key !== "Escape" || submittingRef.current')
+    expect(actionModal).toContain("modalRef.current?.focus()")
+    expect(actionModal).toContain("tabIndex={-1}")
+  })
+
   test("binds draft session materialization and sidecar requests to the selected workspace", async () => {
     const source = await rendererFile("App.tsx")
     const main = await Bun.file(path.join(import.meta.dir, "../../apps/desktop/src/main/main.ts")).text()

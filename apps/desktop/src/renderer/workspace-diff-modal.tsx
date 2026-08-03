@@ -1,5 +1,6 @@
-import { useEffect } from "react"
+import { useEffect, useRef } from "react"
 import type { DesktopWorkspaceDiff, DesktopWorkspaceDiffScope } from "../shared/protocol.js"
+import { useLatestRef } from "./hooks/use-latest-ref.js"
 import type { WorkspaceDiffNavigation } from "./workspace-diff-navigation.js"
 
 export type WorkspaceDiffModalState =
@@ -31,11 +32,22 @@ export function WorkspaceDiffModal({ copy, navigation, onClose, onNavigate, onOp
   onRefresh: (filePath: string, scope: DesktopWorkspaceDiffScope) => void
   state: WorkspaceDiffModalState
 }) {
+  const modalRef = useRef<HTMLElement>(null)
+  const closeRef = useLatestRef(onClose)
   const path = state.status === "ready" ? state.result.path : state.path
   const scope = state.status === "ready" ? state.result.scope : state.scope
 
   useEffect(() => {
+    modalRef.current?.focus()
+  }, [])
+
+  useEffect(() => {
     const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") {
+        event.preventDefault()
+        closeRef.current()
+        return
+      }
       if (!event.altKey || event.metaKey || event.ctrlKey) return
       if (event.key !== "ArrowLeft" && event.key !== "ArrowRight") return
       event.preventDefault()
@@ -45,10 +57,10 @@ export function WorkspaceDiffModal({ copy, navigation, onClose, onNavigate, onOp
     }
     window.addEventListener("keydown", onKeyDown)
     return () => window.removeEventListener("keydown", onKeyDown)
-  }, [navigation.next, navigation.previous, onNavigate, scope])
+  }, [closeRef, navigation.next, navigation.previous, onNavigate, scope])
 
   return <div className="modal">
-    <section className="diff-modal" role="dialog" aria-modal="true" aria-labelledby="workspace-diff-title">
+    <section className="diff-modal" ref={modalRef} role="dialog" aria-modal="true" aria-labelledby="workspace-diff-title" tabIndex={-1}>
       <div className="diff-modal-head">
         <div><h2 id="workspace-diff-title">{copy.diffPreview}</h2><div className="diff-path-row"><span>{copy.diffScopeLabel(scope)}</span><p title={path}>{path}</p></div></div>
         <button className="diff-modal-close" type="button" onClick={onClose} aria-label={copy.close} title={copy.close}>×</button>
